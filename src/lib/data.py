@@ -25,57 +25,51 @@ def readCSV(fileName: str, sep: str =',', fixOpenPrice: bool = False) -> Prices:
     # Open file and read data
     print("Reading:: ", fileName)
     with open(fileName, 'rt', encoding='utf-8') as fileDescriptor:
-
         # Build reader and read header
         reader = csv.reader(fileDescriptor, delimiter=sep)
         h = next(reader)
 
         # Check if 'open' is in header
-        if 'open' not in h:
+        if 'Open' not in h:
             # Return an empty value set
             print("Error: 'open' not found in header.")
-            return Prices(open=np.array([],   dtype=np.float32),
-                          high=np.array([],   dtype=np.float32),
-                          low=np.array([],    dtype=np.float32),
-                          close=np.array([],  dtype=np.float32),
-                          volume=np.array([], dtype=np.float32))
+            return None
         
         # Get indices of open, high, low, close, volume
-        indices = np.array([h.index(s) for s in ('open', 'high', 'low', 'close', 'volume')])
+        indices = [h.index(s) for s in ('Open', 'High', 'Low', 'Close', 'Volume')]
 
         # Initialize variables
-        data = np.empty((5, 0), dtype=np.float32)
+        openPrice, highPrice, lowPrice, closePrice, volume = [], [], [], [], []
         countOut, countFixed = 0, 0
         lastClose = None
 
         # Read in data
         for row in reader:
             # Get values
-            vals = np.array(list(map(float, [row[idx] for idx in indices])))
+            po, ph, pl, pc, pv = list(map(float, [row[idx] for idx in indices]))
 
-            # Adjust open price for current bar to match close price of last bar
+            # fix open price for current bar to match close price of last bar
             if fixOpenPrice and lastClose is not None:
                 ppc = lastClose
-                if abs(vals[0] - ppc) > 1e-8:
+                if abs(po - ppc) > 1e-8:
                     countFixed += 1
-                    # Update open, and low/high if needed
-                    vals[0] = ppc
-                    vals[2] = min(vals[2], vals[0])  
-                    vals[1] = max(vals[1], vals[0])
+                    po = ppc
+                    pl = min(pl, po)
+                    ph = max(ph, po)
             countOut += 1
+            openPrice.append(po)
+            closePrice.append(pc)
+            highPrice.append(ph)
+            lowPrice.append(pl)
+            volume.append(pv)
+            lastClose = pc
 
-            # Append values directly to the data array
-            data = np.append(data, vals.reshape((5, 1)), axis=1)
-
-            lastClose = vals[3]
-
-    # Print out and return tuple
     print("Read done, got %d rows, %d open prices adjusted" % (countOut, countFixed))
-    return Prices(open=  data[0],
-                  high=  data[1],
-                  low=   data[2],
-                  close= data[3],
-                  volume=data[4])
+    return Prices(open=  np.array(openPrice,   dtype=np.float32),
+                  high=  np.array(highPrice,   dtype=np.float32),
+                  low=   np.array(lowPrice,    dtype=np.float32),
+                  close= np.array(closePrice,  dtype=np.float32),
+                  volume=np.array(volume,      dtype=np.float32))
 
 def relativePrices(prices: Prices) -> Prices:
     """
@@ -93,22 +87,34 @@ def relativePrices(prices: Prices) -> Prices:
     relClose = (prices.close - prices.open) / prices.open
 
     # Return tuple with relative prices
+    print("Relative prices generated")
     return Prices(open=prices.open, 
                   high=relHigh,
                   low=relLow, 
                   close=relClose, 
                   volume=prices.volume)
 
-def price_files(dir_name):
+def findFiles(directory: str, ticker: str = '') -> list:
+    """
+    Find files in directory
+    :param directory: directory to search in
+    :param ticker: ticker to search for (default: '' -- all csv files)
+    :return: list of files
+    """
+
+    # Check input parameters
+    assert isinstance(directory, str)
+    assert isinstance(ticker, str)
+
+    # Initialize return
     result = []
-    for path in glob.glob(os.path.join(dir_name, "*.csv")):
+
+    # Generate token
+    if ticker:
+        ticker = '*' + ticker
+    token = ticker + '*.csv'
+    
+    # Search for files and return
+    for path in glob.glob(os.path.join(directory, token)):
         result.append(path)
-    return result
-
-
-def load_year_data(year, basedir='data'):
-    y = str(year)[-2:]
-    result = {}
-    for path in glob.glob(os.path.join(basedir, "*_%s*.csv" % y)):
-        result[path] = load_relative(path)
     return result

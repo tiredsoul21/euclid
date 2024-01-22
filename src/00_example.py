@@ -2,4 +2,8 @@
 from lib import data
 
 if __name__ == "__main__":
-    data.readCSV("data/YNDX_160101_161231.csv")
+    priceData = None
+    priceFiles = data.findFiles('/home/derrick/data/daily_price_data', 'AAPL')
+    for file in priceFiles:
+        priceData = data.readCSV(file)
+
