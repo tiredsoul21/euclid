@@ -1,6 +1,7 @@
 import os
 import csv
 import glob
+import pathlib
 import numpy as np
 import collections
 
@@ -94,27 +95,21 @@ def relativePrices(prices: Prices) -> Prices:
                   close=relClose, 
                   volume=prices.volume)
 
-def findFiles(directory: str, ticker: str = '') -> list:
+def findFiles(path: pathlib.Path) -> list:
     """
     Find files in directory
     :param directory: directory to search in
-    :param ticker: ticker to search for (default: '' -- all csv files)
     :return: list of files
     """
 
     # Check input parameters
-    assert isinstance(directory, str)
-    assert isinstance(ticker, str)
+    assert isinstance(path, pathlib.Path)
 
     # Initialize return
     result = []
-
-    # Generate token
-    if ticker:
-        ticker = '*' + ticker
-    token = ticker + '*.csv'
+    token = '*.csv'
     
     # Search for files and return
-    for path in glob.glob(os.path.join(directory, token)):
+    for path in glob.glob(os.path.join(path, token)):
         result.append(path)
     return result
