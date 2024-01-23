@@ -1,2 +1,3 @@
 dependencies
-venv
+ml-env
+**/__pycache__

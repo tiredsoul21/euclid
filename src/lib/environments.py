@@ -9,7 +9,8 @@ from . import data
 
 # Default values
 DEFAULT_BARS_COUNT = 10
-DEFAULT_COMMISSION_PERC = 0.0
+DEFAULT_COMMISSION = 0.0
+DEFAULT_SEED = 42
 
 # Actions available to the agent
 class Actions(enum.Enum):
@@ -20,52 +21,89 @@ class Actions(enum.Enum):
 class StocksEnv(gym.Env):
     metadata = {'render.modes': ['human']}
 
-    # TODO
-    def __init__(self, prices, bars_count=DEFAULT_BARS_COUNT,
-                 commission=DEFAULT_COMMISSION_PERC,
-                 reset_on_close=True, state_1d=False,
-                 random_ofs_on_reset=True, reward_on_close=False,
-                 volumes=False):
-        assert isinstance(prices, dict)
-        self._prices = prices
-        if state_1d:
-            self._state = State1D(
-                bars_count, commission, reset_on_close,
-                reward_on_close=reward_on_close, volumes=volumes)
-        else:
-            self._state = State(
-                bars_count, commission, reset_on_close,
-                reward_on_close=reward_on_close, volumes=volumes)
-        self.action_space = gym.spaces.Discrete(n=len(Actions))
-        self.observation_space = gym.spaces.Box(
-            low=-np.inf, high=np.inf,
-            shape=self._state.shape, dtype=np.float32)
-        self.random_ofs_on_reset = random_ofs_on_reset
-        self.seed()
+    def __init__(self, prices: data.Prices,
+                 barCount: int = DEFAULT_BARS_COUNT,
+                 commission: float = DEFAULT_COMMISSION,
+                 resetOnClose: bool = True,
+                 randomOffset: bool = True,
+                 rewardOnClose: bool = False,
+                 volumes: bool = False):
+        """
+        :param prices: (dict) instrument -> price data
+        :param barCount: (int) window size
+        :param commission: (float) value of the commission
+        :param resetOnClose: (bool) reset position on each close
+        :param randomOffset: (bool) randomize position on reset
+        :param rewardOnClose: (bool) give reward only at the end of the position
+        :param volumes: (bool) use volumes
+        """
 
-    # TODO
+        # Check input parameters
+        assert isinstance(prices, dict)
+        assert isinstance(barCount, int)
+        assert isinstance(commission, float)
+        assert isinstance(resetOnClose, bool)
+        assert isinstance(randomOffset, bool)
+        assert isinstance(rewardOnClose, bool)
+        assert isinstance(volumes, bool)
+        assert barCount > 0
+        assert commission >= 0.0
+
+        # Set random seed
+        self.seed(DEFAULT_SEED)
+
+        # Set prices (dict of instrument -> price data)
+        self.prices = prices
+
+        # Build action space
+        self.action_space = gym.spaces.Discrete(n=len(Actions))
+        self._state = PriceState(barCount = barCount,
+                            commission = commission,
+                            resetOnClose =resetOnClose,
+                            rewardOnClose=rewardOnClose,
+                            volumes=volumes)
+        self.observation_space = gym.spaces.Box(low=-np.inf,
+                                                high=np.inf,
+                                                shape=self._state.shape,
+                                                dtype=np.float32)
+        self.randomOffset = randomOffset
+
     def reset(self):
-        # make selection of the instrument and it's offset. Then reset the state
-        self._instrument = self.np_random.choice(
-            list(self._prices.keys()))
-        prices = self._prices[self._instrument]
-        bars = self._state.bars_count
-        if self.random_ofs_on_reset:
-            offset = self.np_random.choice(
-                prices.high.shape[0]-bars*10) + bars
+        # make selection of the instrument and price data
+        self._instrument = self.np_random.choice(list(self.prices.keys()))
+        prices = self.prices[self._instrument]
+
+        # set offset if randomOffset is True
+        bars = self._state.barCount
+        if self.randomOffset:
+            offset = self.np_random.choice(prices.high.shape[0]-bars*10) + bars
         else:
             offset = bars
+
+        # reset state and return observation
         self._state.reset(prices, offset)
         return self._state.encode()
 
-    # TODO
-    def step(self, action_idx):
-        action = Actions(action_idx)
+    def step(self, actionIdx):
+        """
+        Perform one step in our price, adjust offset, check for the end of prices
+        and handle position change
+        :param actionIdx: index of the action to perform
+        :return: observation, reward, done, info
+        """
+        # Check input parameters
+        assert isinstance(actionIdx, int)
+        assert self.action_space.contains(actionIdx)
+
+        # Perform our action and get reward
+        action = Actions(actionIdx)
         reward, done = self._state.step(action)
+
+        # Get observation and info and return
         obs = self._state.encode()
         info = {
             "instrument": self._instrument,
-            "offset": self._state._offset
+            "offset": self._state.offset
         }
         return obs, reward, done, info
 
@@ -96,139 +134,148 @@ class StocksEnv(gym.Env):
         seed2 = hash(seed1 + 1) % 2 ** 31
         return [seed1, seed2]
 
-    # TODO
     @classmethod
-    def fromDirectory(cls, data_dir, **kwargs):
+    def fromDirectory(cls, directory, **kwargs):
+        """
+        Create environment from directory with price data
+        :param directory: directory with price data
+        :param kwargs: arguments for the environment
+        :return: environment
+        """
         prices = {
-            file: data.load_relative(file)
-            for file in data.price_files(data_dir)
+            file: data.loadRelative(file)
+            for file in data.findFiles(directory)
         }
         return StocksEnv(prices, **kwargs)
 
-# TODO
-class State:
-    def __init__(self, bars_count, commission_perc,
-                 reset_on_close, reward_on_close=True,
-                 volumes=True):
-        assert isinstance(bars_count, int)
-        assert bars_count > 0
-        assert isinstance(commission_perc, float)
-        assert commission_perc >= 0.0
-        assert isinstance(reset_on_close, bool)
-        assert isinstance(reward_on_close, bool)
-        self.bars_count = bars_count
-        self.commission_perc = commission_perc
-        self.reset_on_close = reset_on_close
-        self.reward_on_close = reward_on_close
+class PriceState:
+    def __init__(self,
+                 barCount: int,
+                 commission: float,
+                 resetOnClose: bool,
+                 rewardOnClose: bool = True,
+                 volumes: bool = True):
+
+        # Check input parameters
+        assert isinstance(barCount, int)
+        assert isinstance(commission, float)
+        assert isinstance(resetOnClose, bool)
+        assert isinstance(rewardOnClose, bool)
+        assert isinstance(volumes, bool)
+        assert barCount > 0
+        assert commission >= 0.0
+
+        # Set initial parameters
+        self.barCount = barCount
+        self.commission = commission
+        self.resetOnClose = resetOnClose
+        self.rewardOnClose = rewardOnClose
         self.volumes = volumes
 
-    def reset(self, prices, offset):
+    def reset(self, prices: data.Prices, offset: int):
+        """
+        Reset state to the beginning of the price data
+        :param prices: price data
+        :param offset: offset to start from
+        """
+
+        # Check input parameters
         assert isinstance(prices, data.Prices)
-        assert offset >= self.bars_count-1
-        self.have_position = False
-        self.open_price = 0.0
-        self._prices = prices
-        self._offset = offset
+        assert isinstance(offset, int)
+        assert offset >= self.barCount-1
+
+        # Set initial parameters
+        self.havePosition = False
+        self.openPrice = 0.0
+        self.prices = prices
+        self.offset = offset
 
     @property
     def shape(self):
-        # [h, l, c] * bars + position_flag + rel_profit
-        if self.volumes:
-            return 4 * self.bars_count + 1 + 1,
-        else:
-            return 3*self.bars_count + 1 + 1,
+        """
+        Return shape of the state
+        """
+        size = 5
+        if self.volumes:  # add volumes
+            size += 1
+        return size * self.barCount + 1 + 1,
 
     def encode(self):
         """
-        Convert current state into numpy array.
+        Encode current state as numpy array
         """
-        res = np.ndarray(shape=self.shape, dtype=np.float32)
-        shift = 0
-        for bar_idx in range(-self.bars_count+1, 1):
-            ofs = self._offset + bar_idx
-            res[shift] = self._prices.high[ofs]
-            shift += 1
-            res[shift] = self._prices.low[ofs]
-            shift += 1
-            res[shift] = self._prices.close[ofs]
-            shift += 1
-            if self.volumes:
-                res[shift] = self._prices.volume[ofs]
-                shift += 1
-        res[shift] = float(self.have_position)
-        shift += 1
-        if not self.have_position:
-            res[shift] = 0.0
-        else:
-            res[shift] = self._cur_close() / self.open_price - 1.0
+
+        # Initialize result array and set start and stop indices
+        res = np.zeros(shape=self.shape, dtype=np.float32)
+        start = self.offset-(self.barCount-1)
+        stop = self.offset+1
+
+        # Set values
+        res[0] = self.prices.high[start:stop]
+        res[1] = self.prices.low[start:stop]
+        res[2] = self.prices.close[start:stop]
+
+        # Set volumes if needed
+        destIdx = 3
+        if self.volumes:
+            res[3] = self.prices.volume[start:stop]
+            destIdx += 1
+
+        # Set position if needed
+        if self.havePosition:
+            res[destIdx] = 1.0
+            res[destIdx+1] = self.currentClose() / self.openPrice - 1.0
+
         return res
 
-    def _cur_close(self):
+    def currentClose(self):
         """
         Calculate real close price for the current bar
         """
-        open = self._prices.open[self._offset]
-        rel_close = self._prices.close[self._offset]
-        return open * (1.0 + rel_close)
+        open = self.prices.open[self.offset]
+        relativeClose = self.prices.close[self.offset]
+        return open * (1.0 + relativeClose)
 
-    def step(self, action):
+    def step(self, action: Actions):
         """
         Perform one step in our price, adjust offset, check for the end of prices
         and handle position change
-        :param action:
+        :param action: action to perform
         :return: reward, done
         """
+
+        # Check input parameters
         assert isinstance(action, Actions)
+
+        # Initialize
         reward = 0.0
         done = False
-        close = self._cur_close()
-        if action == Actions.Buy and not self.have_position:
-            self.have_position = True
-            self.open_price = close
-            reward -= self.commission_perc
-        elif action == Actions.Close and self.have_position:
-            reward -= self.commission_perc
-            done |= self.reset_on_close
-            if self.reward_on_close:
-                reward += 100.0 * (close / self.open_price - 1.0)
-            self.have_position = False
-            self.open_price = 0.0
+        close = self.currentClose()
 
-        self._offset += 1
-        prev_close = close
-        close = self._cur_close()
-        done |= self._offset >= self._prices.close.shape[0]-1
+        # Handle position change
+        if action == Actions.Buy and not self.havePosition:
+            # get a position, price, and charge a commission
+            self.havePosition = True
+            self.openPrice = close
+            reward -= self.commission
+        elif action == Actions.Close and self.havePosition:
+            # close a position, price, and charge a commission
+            reward -= self.commission
+            done |= self.resetOnClose
 
-        if self.have_position and not self.reward_on_close:
-            reward += 100.0 * (close / prev_close - 1.0)
+            # calculate reward
+            if self.rewardOnClose:
+                reward += 100.0 * (close / self.openPrice - 1.0)
+            self.havePosition = False
+            self.openPrice = 0.0
+
+        # Move forward
+        self.offset += 1
+        previousClose = close
+        close = self.currentClose()
+        done |= self.offset >= self.prices.close.shape[0]-1
+
+        if self.havePosition and not self.rewardOnClose:
+            reward += 100.0 * (close / previousClose - 1.0)
 
         return reward, done
-
-# TODO
-class State1D(State):
-    """
-    State with shape suitable for 1D convolution
-    """
-    @property
-    def shape(self):
-        if self.volumes:
-            return (6, self.bars_count)
-        else:
-            return (5, self.bars_count)
-
-    def encode(self):
-        res = np.zeros(shape=self.shape, dtype=np.float32)
-        start = self._offset-(self.bars_count-1)
-        stop = self._offset+1
-        res[0] = self._prices.high[start:stop]
-        res[1] = self._prices.low[start:stop]
-        res[2] = self._prices.close[start:stop]
-        if self.volumes:
-            res[3] = self._prices.volume[start:stop]
-            dst = 4
-        else:
-            dst = 3
-        if self.have_position:
-            res[dst] = 1.0
-            res[dst+1] = self._cur_close() / self.open_price - 1.0
-        return res
