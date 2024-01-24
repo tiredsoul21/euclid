@@ -8,6 +8,7 @@ python3 -m venv ml-env
 source ml-env/bin/activate
 pip3 install numpy==1.26.3
 pip3 install gym==0.26.2
+pip3 install torch==2.1.2
 ```
 
 ## Monitor

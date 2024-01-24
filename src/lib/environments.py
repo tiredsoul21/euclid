@@ -198,7 +198,7 @@ class PriceState:
         size = 5
         if self.volumes:  # add volumes
             size += 1
-        return size * self.barCount + 1 + 1,
+        return (size, self.barCount)
 
     def encode(self):
         """

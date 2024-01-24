@@ -1,65 +1,18 @@
-import math
+import copy
 import numpy as np
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-
-
-class NoisyLinear(nn.Linear):
-    def __init__(self, in_features, out_features, sigma_init=0.017, bias=True):
-        super(NoisyLinear, self).__init__(in_features, out_features, bias=bias)
-        self.sigma_weight = nn.Parameter(torch.full((out_features, in_features), sigma_init))
-        self.register_buffer("epsilon_weight", torch.zeros(out_features, in_features))
-        if bias:
-            self.sigma_bias = nn.Parameter(torch.full((out_features,), sigma_init))
-            self.register_buffer("epsilon_bias", torch.zeros(out_features))
-        self.reset_parameters()
-
-    def reset_parameters(self):
-        std = math.sqrt(3 / self.in_features)
-        self.weight.data.uniform_(-std, std)
-        self.bias.data.uniform_(-std, std)
-
-    def forward(self, input):
-        self.epsilon_weight.normal_()
-        bias = self.bias
-        if bias is not None:
-            self.epsilon_bias.normal_()
-            bias = bias + self.sigma_bias * self.epsilon_bias
-        return F.linear(input, self.weight + self.sigma_weight * self.epsilon_weight, bias)
-
-
-class SimpleFFDQN(nn.Module):
-    def __init__(self, obs_len, actions_n):
-        super(SimpleFFDQN, self).__init__()
-
-        self.fc_val = nn.Sequential(
-            nn.Linear(obs_len, 512),
-            nn.ReLU(),
-            nn.Linear(512, 512),
-            nn.ReLU(),
-            nn.Linear(512, 1)
-        )
-
-        self.fc_adv = nn.Sequential(
-            nn.Linear(obs_len, 512),
-            nn.ReLU(),
-            nn.Linear(512, 512),
-            nn.ReLU(),
-            nn.Linear(512, actions_n)
-        )
-
-    def forward(self, x):
-        val = self.fc_val(x)
-        adv = self.fc_adv(x)
-        return val + (adv - adv.mean(dim=1, keepdim=True))
-
 
 class DQNConv1D(nn.Module):
-    def __init__(self, shape, actions_n):
+    def __init__(self, shape, actionCount):
+        """
+        Create a DQN model for 1D convolutional input
+        :param shape: shape of input (channels, in)
+        """
         super(DQNConv1D, self).__init__()
 
+        # Create convolutional layers - transform time series into features
         self.conv = nn.Sequential(
             nn.Conv1d(shape[0], 128, 5),
             nn.ReLU(),
@@ -67,74 +20,65 @@ class DQNConv1D(nn.Module):
             nn.ReLU(),
         )
 
-        out_size = self._get_conv_out(shape)
+        out_size = self._getConvOut(shape)
 
+        # Create fully connected layers - transform features into value
         self.fc_val = nn.Sequential(
             nn.Linear(out_size, 512),
             nn.ReLU(),
             nn.Linear(512, 1)
         )
 
+        # Create fully connected layers - transform features into advantage for each action
         self.fc_adv = nn.Sequential(
             nn.Linear(out_size, 512),
             nn.ReLU(),
-            nn.Linear(512, actions_n)
+            nn.Linear(512, actionCount)
         )
 
-    def _get_conv_out(self, shape):
-        o = self.conv(torch.zeros(1, *shape))
-        return int(np.prod(o.size()))
+    def _getConvOut(self, shape):
+       o = self.conv(torch.zeros(1, *shape))
+       return o.view(1, -1).size(1)
 
     def forward(self, x):
-        conv_out = self.conv(x).view(x.size()[0], -1)
-        val = self.fc_val(conv_out)
-        adv = self.fc_adv(conv_out)
+        convOut = self.conv(x).view(x.size()[0], -1)
+        val = self.fc_val(convOut)
+        adv = self.fc_adv(convOut)
         return val + (adv - adv.mean(dim=1, keepdim=True))
 
+class TargetNet:
+    """
+    Wrapper around model which provides copy of it instead of trained weights
+    """
+    def __init__(self, model):
+        """
+        Create a target net from a model (deep copy)
+        """
+        self.model = model
+        self.targetModel = copy.deepcopy(model)
 
-class DQNConv1DLarge(nn.Module):
-    def __init__(self, shape, actions_n):
-        super(DQNConv1DLarge, self).__init__()
+    def sync(self):
+        """
+        Copy weights from model to target model
+        """
+        self.targetModel.load_state_dict(self.model.state_dict())
 
-        self.conv = nn.Sequential(
-            nn.Conv1d(shape[0], 32, 3),
-            nn.MaxPool1d(3, 2),
-            nn.ReLU(),
-            nn.Conv1d(32, 32, 3),
-            nn.MaxPool1d(3, 2),
-            nn.ReLU(),
-            nn.Conv1d(32, 32, 3),
-            nn.MaxPool1d(3, 2),
-            nn.ReLU(),
-            nn.Conv1d(32, 32, 3),
-            nn.MaxPool1d(3, 2),
-            nn.ReLU(),
-            nn.Conv1d(32, 32, 3),
-            nn.ReLU(),
-            nn.Conv1d(32, 32, 3),
-            nn.ReLU(),
-        )
+    def alphaSync(self, alpha):
+        """
+        Blend params of target net with params from the model
+        :param alpha:
+        """
 
-        out_size = self._get_conv_out(shape)
+        # Check input parameters
+        assert isinstance(alpha, float)
+        assert 0.0 < alpha <= 1.0
 
-        self.fc_val = nn.Sequential(
-            nn.Linear(out_size, 512),
-            nn.ReLU(),
-            nn.Linear(512, 1)
-        )
+        state = self.model.state_dict()
+        targetState = self.targetModel.state_dict()
 
-        self.fc_adv = nn.Sequential(
-            nn.Linear(out_size, 512),
-            nn.ReLU(),
-            nn.Linear(512, actions_n)
-        )
+        # Blend the parameters with a weighted average
+        for k, v in state.items():
+            targetState[k] = targetState[k] * alpha + (1 - alpha) * v
 
-    def _get_conv_out(self, shape):
-        o = self.conv(torch.zeros(1, *shape))
-        return int(np.prod(o.size()))
-
-    def forward(self, x):
-        conv_out = self.conv(x).view(x.size()[0], -1)
-        val = self.fc_val(conv_out)
-        adv = self.fc_adv(conv_out)
-        return val + (adv - adv.mean(dim=1, keepdim=True))
+        # Load the blended parameters into the target model
+        self.targetModel.load_state_dict(targetState)
