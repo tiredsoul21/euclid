@@ -13,65 +13,76 @@ class BaseAgent:
     """
     Abstract Agent interface
     """
-    def initial_state(self):
+    def initialState(self):
         """
         Should create initial empty state for the agent. It will be called for the start of the episode
-        :return: Anything agent want to remember
+        :return: Anything agent wants to remember
         """
         return None
 
-    def __call__(self, states, agent_states):
+    def __call__(self, states, agentStates):
         """
         Convert observations and states into actions to take
         :param states: list of environment states to process
-        :param agent_states: list of states with the same length as observations
+        :param agentStates: list of states with the same length as observations
         :return: tuple of actions, states
         """
         assert isinstance(states, list)
-        assert isinstance(agent_states, list)
-        assert len(agent_states) == len(states)
+        assert isinstance(agentStates, list)
+        assert len(agentStates) == len(states)
 
         raise NotImplementedError
 
 
-def default_states_preprocessor(states):
+def defaultStatesPreprocessor(states):
     """
     Convert list of states into the form suitable for model. By default we assume Variable
     :param states: list of numpy arrays with states
     :return: Variable
     """
     if len(states) == 1:
-        np_states = np.expand_dims(states[0], 0)
+        # Turn single state into a batch
+        npStates = np.expand_dims(states[0], 0)
     else:
-        np_states = np.array([np.array(s, copy=False) for s in states], copy=False)
-    return torch.tensor(np_states)
-
-
-def float32_preprocessor(states):
-    np_states = np.array(states, dtype=np.float32)
-    return torch.tensor(np_states)
-
+        # Transpose list of arrays into array of arrays
+        npStates = np.array([np.array(s, copy=False) for s in states], copy=False)
+    return torch.tensor(npStates)
 
 class DQNAgent(BaseAgent):
     """
     DQNAgent is a memoryless DQN agent which calculates Q values
-    from the observations and  converts them into the actions using action_selector
+    from the observations and  converts them into the actions using actionSelector
     """
-    def __init__(self, dqn_model, action_selector, device="cpu", preprocessor=default_states_preprocessor):
-        self.dqn_model = dqn_model
-        self.action_selector = action_selector
+    def __init__(self,dqnModel, actionSelector, device="cpu", preprocessor=defaultStatesPreprocessor):
+        """
+        Create DQN-based agent
+        :param dqnModel: DQN model to use for action calculation
+        :param actionSelector: selector to choose actions from Q-values
+        :param device: device to use for calculations (cpu or cuda)
+        :param preprocessor: function to process states batch before feeding it into DQN
+        """
+        self.dqnModel = dqnModel
+        self.actionSelector = actionSelector
         self.preprocessor = preprocessor
         self.device = device
 
+    # Skip gradient calculation on forward pass
     @torch.no_grad()
-    def __call__(self, states, agent_states=None):
-        if agent_states is None:
-            agent_states = [None] * len(states)
+    def __call__(self, states, agentStates=None):
+        if agentStates is None:
+            # Create initial empty state
+            agentStates = [None] * len(states)
         if self.preprocessor is not None:
+            # Preprocess states if needed
             states = self.preprocessor(states)
+            # Checks if states is a tensor before moving it to the device
             if torch.is_tensor(states):
                 states = states.to(self.device)
-        q_v = self.dqn_model(states)
-        q = q_v.data.cpu().numpy()
-        actions = self.action_selector(q)
-        return actions, agent_states
+            # May need to catch if states is not a tensor?
+        # Calculate Q values - forward pass of the model
+        qValues = self.dqnModel(states)
+        # Convert Q values into numpy array and move to CPU
+        q = qValues.data.cpu().numpy()
+        # Select actions using the selector
+        actions = self.actionSelector(q)
+        return actions, agentStates

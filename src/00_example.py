@@ -4,6 +4,7 @@ import argparse
 import gym.wrappers
 
 import torch
+import torch.optim as optim
 
 from lib import data
 from lib import models
@@ -13,11 +14,15 @@ from lib import environments
 
 SAVES_DIR = pathlib.Path("output")
 
+# How many bars to feed into the model
 BAR_COUNT = 50
 
+# EPSILON GREEDY - for exploration
 EPS_START = 1.0
 EPS_FINAL = 0.1
 EPS_STEPS = 1000000
+
+LEARNING_RATE = 0.0001
 
 if __name__ == "__main__":
     # Parse command line arguments
@@ -87,7 +92,9 @@ if __name__ == "__main__":
     # Create the experience source
     # exp_source = ptan.experience.ExperienceSourceFirstLast(env, agent, GAMMA, steps_count=REWARD_STEPS)
     # buffer = ptan.experience.ExperienceReplayBuffer(exp_source, REPLAY_SIZE)
-    # optimizer = optim.Adam(net.parameters(), lr=LEARNING_RATE)
+
+    # Create the optimizer
+    optimizer = optim.Adam(net.parameters(), lr=LEARNING_RATE)
 
     # def process_batch(engine, batch):
     #     optimizer.zero_grad()
