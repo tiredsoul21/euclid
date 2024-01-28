@@ -27,6 +27,8 @@ class BaseAgent:
         :param agentStates: list of states with the same length as observations
         :return: tuple of actions, states
         """
+
+        # Check input parameters
         assert isinstance(states, list)
         assert isinstance(agentStates, list)
         assert len(agentStates) == len(states)

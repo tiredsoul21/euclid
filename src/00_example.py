@@ -10,6 +10,7 @@ from lib import data
 from lib import models
 from lib import agents
 from lib import actions
+from lib import experiences
 from lib import environments
 
 SAVES_DIR = pathlib.Path("output")
@@ -23,6 +24,12 @@ EPS_FINAL = 0.1
 EPS_STEPS = 1000000
 
 LEARNING_RATE = 0.0001
+GAMMA = 0.99
+
+REWARD_STEPS = 2
+
+REPLAY_SIZE = 100000
+REPLAY_INITIAL = 10000
 
 if __name__ == "__main__":
     # Parse command line arguments
@@ -90,8 +97,8 @@ if __name__ == "__main__":
     agent = agents.DQNAgent(net, selector, device=device)
 
     # Create the experience source
-    # exp_source = ptan.experience.ExperienceSourceFirstLast(env, agent, GAMMA, steps_count=REWARD_STEPS)
-    # buffer = ptan.experience.ExperienceReplayBuffer(exp_source, REPLAY_SIZE)
+    exp_source = experiences.ExperienceSourceFirstLast(env, agent, GAMMA, stepsCount=REWARD_STEPS)
+    buffer = experiences.ExperienceReplayBuffer(exp_source, REPLAY_SIZE)
 
     # Create the optimizer
     optimizer = optim.Adam(net.parameters(), lr=LEARNING_RATE)
