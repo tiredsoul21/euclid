@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import pathlib
 import argparse
+import numpy as np
+
 import gym.wrappers
 
 import torch
@@ -87,16 +89,14 @@ if __name__ == "__main__":
         priceData = {index: data.readCSV(str(dataPath)) }
         env = environments.StocksEnv(priceData, barCount=BAR_COUNT)
         env._state.barCount = BAR_COUNT
-
-        env_tst = environments.StocksEnv(priceData, barCount=BAR_COUNT)
     elif dataPath.is_dir():
         env = environments.StocksEnv.fromDirectory(dataPath, barCount=BAR_COUNT)
-        env_tst = environments.StocksEnv.fromDirectory(dataPath, barCount=BAR_COUNT)
     else:
         raise RuntimeError("No data to train on")
 
     # Create validation environment
     env = gym.wrappers.TimeLimit(env, max_episode_steps=1000)
+    envTest = environments.StocksEnv.fromDirectory(testPath, barCount=BAR_COUNT)
     envVal = environments.StocksEnv.fromDirectory(valPath, barCount=BAR_COUNT)
 
     # Create the networks
@@ -140,11 +140,11 @@ if __name__ == "__main__":
         # Update the epsilon
         epsilonTracker.frame(engine.state.iteration)
 
-        if getattr(engine.state, "eval_states", None) is None:
+        if getattr(engine.state, "evalStates", None) is None:
             evalStates = buffer.sample(STATES_TO_EVALUATE)
             evalStates = [np.array(transition.state, copy=False)
-                           for transition in eval_states]
-            engine.state.evalStates = np.array(eval_states, copy=False)
+                           for transition in evalStates]
+            engine.state.evalStates = np.array(evalStates, copy=False)
 
         return {
             "loss": loss_v.item(),
@@ -157,10 +157,10 @@ if __name__ == "__main__":
     @engine.on(Events.ITERATION_COMPLETED)
     def sync_eval(engine: Engine):
         if engine.state.iteration % TARGETNET_SYNC_INTERNVAL == 0:
-            tgt_net.sync()
+            targetNet.sync()
 
             mean_val = common.calculateStatesValues(
-                engine.state.eval_states, net, device=device)
+                engine.state.evalStates, net, device=device)
             engine.state.metrics["values_mean"] = mean_val
             if getattr(engine.state, "best_mean_val", None) is None:
                 engine.state.best_mean_val = mean_val
@@ -168,18 +168,18 @@ if __name__ == "__main__":
                 print("%d: Best mean value updated %.3f -> %.3f" % (
                     engine.state.iteration, engine.state.best_mean_val,
                     mean_val))
-                path = saves_path / ("mean_value-%.3f.data" % mean_val)
+                path = savesPath / ("mean_value-%.3f.data" % mean_val)
                 torch.save(net.state_dict(), path)
                 engine.state.best_mean_val = mean_val
 
     @engine.on(Events.ITERATION_COMPLETED)
     def validate(engine: Engine):
         if engine.state.iteration % VALIDATION_INTERVAL == 0:
-            res = validation.validation_run(env_tst, net, device=device)
+            res = validation.validation_run(envTest, net, device=device)
             print("%d: tst: %s" % (engine.state.iteration, res))
             for key, val in res.items():
                 engine.state.metrics[key + "_tst"] = val
-            res = validation.validation_run(env_val, net, device=device)
+            res = validation.validation_run(envVal, net, device=device)
             print("%d: val: %s" % (engine.state.iteration, res))
             for key, val in res.items():
                 engine.state.metrics[key + "_val"] = val
@@ -191,7 +191,7 @@ if __name__ == "__main__":
                     engine.state.best_val_reward, val_reward
                 ))
                 engine.state.best_val_reward = val_reward
-                path = saves_path / ("val_reward-%.3f.data" % val_reward)
+                path = savesPath / ("val_reward-%.3f.data" % val_reward)
                 torch.save(net.state_dict(), path)
 
 

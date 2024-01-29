@@ -96,7 +96,7 @@ class ExperienceSource:
                 histories.append(deque(maxlen=self.stepsCount))
                 currentReward.append(0.0)
                 currentSteps.append(0)
-                agentStates.append(self.agent.initial_state())
+                agentStates.append(self.agent.initialState())
 
         iterIndex = 0
         while True:
@@ -134,10 +134,10 @@ class ExperienceSource:
             for envIndex, (env, actions) in enumerate(zip(self.pool, groupedActions)):
                 if self.vectorized:
                     # Receive the step results as an array
-                    nextStates, rewards, isDones, _ = env.step(actions)
+                    nextStates, rewards, isDones, _, _ = env.step(actions)
                 else:
                     # Receive the step results and cast to an array
-                    nextState, r, isDone, _ = env.step(actions[0])
+                    nextState, r, isDone, _, _ = env.step(actions[0])
                     nextStates, rewards, isDones = [nextState], [r], [isDone]
 
                 # Loop through the step results
@@ -181,7 +181,7 @@ class ExperienceSource:
 
                         # Reset everything
                         states[idx] = env.reset() if not self.vectorized else None
-                        agentStates[idx] = self.agent.initial_state()
+                        agentStates[idx] = self.agent.initialState()
                         history.clear()
 
                 # Update the global offset
@@ -199,7 +199,7 @@ class ExperienceSource:
             self.totalSteps = []
         return reward
 
-    def popTotalSteps(self):
+    def popRewardsSteps(self):
         """
         Returns the total steps and total rewards and clears the lists
         :return: total steps

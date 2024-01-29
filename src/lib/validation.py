@@ -30,14 +30,14 @@ def validation_run(env, net, episodes=100, device="cpu", epsilon=0.02, comission
             action_idx = out_v.max(dim=1)[1].item()
             if np.random.random() < epsilon:
                 action_idx = env.action_space.sample()
-            action = environ.Actions(action_idx)
+            action = environments.Actions(action_idx)
 
-            close_price = env._state._cur_close()
+            close_price = env._state._currentClose()
 
-            if action == environ.Actions.Buy and position is None:
+            if action == environments.Actions.Buy and position is None:
                 position = close_price
                 position_steps = 0
-            elif action == environ.Actions.Close and position is not None:
+            elif action == environments.Actions.Close and position is not None:
                 profit = close_price - position - (close_price + position) * comission / 100
                 profit = 100.0 * profit / position
                 stats['order_profits'].append(profit)
@@ -45,7 +45,7 @@ def validation_run(env, net, episodes=100, device="cpu", epsilon=0.02, comission
                 position = None
                 position_steps = None
 
-            obs, reward, done, _ = env.step(action_idx)
+            obs, reward, done, _, _ = env.step(action_idx)
             total_reward += reward
             episode_steps += 1
             if position_steps is not None:

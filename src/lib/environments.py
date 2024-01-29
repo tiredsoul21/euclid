@@ -5,7 +5,7 @@ from gym.envs.registration import EnvSpec
 import enum
 import numpy as np
 
-from . import data
+from lib import data
 
 # Default values
 DEFAULT_BARS_COUNT = 10
@@ -92,8 +92,8 @@ class StocksEnv(gym.Env):
         :return: observation, reward, done, info
         """
         # Check input parameters
-        assert isinstance(actionIdx, int)
-        assert self.action_space.contains(actionIdx)
+        # assert isinstance(actionIdx, int)
+        # assert self.action_space.contains(actionIdx)
 
         # Perform our action and get reward
         action = Actions(actionIdx)
@@ -105,7 +105,8 @@ class StocksEnv(gym.Env):
             "instrument": self._instrument,
             "offset": self._state.offset
         }
-        return obs, reward, done, info
+        truncated = None
+        return obs, reward, done, truncated, info
 
     def render(self, mode='human', close=False):
         """
@@ -224,11 +225,11 @@ class PriceState:
         # Set position if needed
         if self.havePosition:
             res[destIdx] = 1.0
-            res[destIdx+1] = self.currentClose() / self.openPrice - 1.0
+            res[destIdx+1] = self._currentClose() / self.openPrice - 1.0
 
         return res
 
-    def currentClose(self):
+    def _currentClose(self):
         """
         Calculate real close price for the current bar
         """
@@ -250,7 +251,7 @@ class PriceState:
         # Initialize
         reward = 0.0
         done = False
-        close = self.currentClose()
+        close = self._currentClose()
 
         # Handle position change
         if action == Actions.Buy and not self.havePosition:
@@ -272,7 +273,7 @@ class PriceState:
         # Move forward
         self.offset += 1
         previousClose = close
-        close = self.currentClose()
+        close = self._currentClose()
         done |= self.offset >= self.prices.close.shape[0]-1
 
         if self.havePosition and not self.rewardOnClose:

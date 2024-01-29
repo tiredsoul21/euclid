@@ -44,7 +44,7 @@ class EndOfEpisodeHandler:
         State.event_to_attr[EpisodeEvents.BEST_REWARD_REACHED] = "episode"
 
     def __call__(self, engine: Engine):
-        for reward, steps in self._exp_source.pop_rewards_steps():
+        for reward, steps in self._exp_source.popRewardsSteps():
             engine.state.episode = getattr(engine.state, "episode", 0) + 1
             engine.state.episode_reward = reward
             engine.state.episode_steps = steps

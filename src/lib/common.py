@@ -16,32 +16,32 @@ from ignite.contrib.handlers import tensorboard_logger as tb_logger
 
 
 # @torch.no_grad()
-# def calculateStatesValues(states,
-#                           net, 
-#                           device: str = "cpu"):
-#     mean_vals = []
-#     for batch in np.array_split(states, 64):
-#         states_v = torch.tensor(batch).to(device)
-#         action_values_v = net(states_v)
-#         best_action_values_v = action_values_v.max(1)[0]
-#         mean_vals.append(best_action_values_v.mean().item())
-#     return np.mean(mean_vals)
+def calculateStatesValues(states,
+                          net, 
+                          device: str = "cpu"):
+    mean_vals = []
+    for batch in np.array_split(states, 64):
+        states_v = torch.tensor(batch).to(device)
+        action_values_v = net(states_v)
+        best_action_values_v = action_values_v.max(1)[0]
+        mean_vals.append(best_action_values_v.mean().item())
+    return np.mean(mean_vals)
 
 
-# def unpackBatch(batch):
-#     states, actions, rewards, dones, last_states = [], [], [], [], []
-#     for exp in batch:
-#         state = np.array(exp.state, copy=False)
-#         states.append(state)
-#         actions.append(exp.action)
-#         rewards.append(exp.reward)
-#         dones.append(exp.last_state is None)
-#         if exp.last_state is None:
-#             last_states.append(state)       # the result will be masked anyway
-#         else:
-#             last_states.append(np.array(exp.last_state, copy=False))
-#     return np.array(states, copy=False), np.array(actions), np.array(rewards, dtype=np.float32), \
-#            np.array(dones, dtype=np.uint8), np.array(last_states, copy=False)
+def unpackBatch(batch):
+    states, actions, rewards, dones, lastStates = [], [], [], [], []
+    for exp in batch:
+        state = np.array(exp.state, copy=False)
+        states.append(state)
+        actions.append(exp.action)
+        rewards.append(exp.reward)
+        dones.append(exp.lastState is None)
+        if exp.lastState is None:
+            lastStates.append(state)       # the result will be masked anyway
+        else:
+            lastStates.append(np.array(exp.lastState, copy=False))
+    return np.array(states, copy=False), np.array(actions), np.array(rewards, dtype=np.float32), \
+           np.array(dones, dtype=np.uint8), np.array(lastStates, copy=False)
 
 
 def calculateLoss(batch, net, tgt_net, gamma, device="cpu"):
