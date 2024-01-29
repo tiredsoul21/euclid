@@ -111,8 +111,8 @@ if __name__ == "__main__":
     agent = agents.DQNAgent(net, selector, device=device)
 
     # Create the experience source
-    exp_source = experiences.ExperienceSourceFirstLast(env, agent, GAMMA, stepsCount=REWARD_STEPS)
-    buffer = experiences.ExperienceReplayBuffer(exp_source, REPLAY_SIZE)
+    expSource = experiences.ExperienceSourceFirstLast(env, agent, GAMMA, stepsCount=REWARD_STEPS)
+    buffer = experiences.ExperienceReplayBuffer(expSource, REPLAY_SIZE)
 
     # Create the optimizer
     optimizer = optim.Adam(net.parameters(), lr=LEARNING_RATE)
@@ -129,10 +129,10 @@ if __name__ == "__main__":
         optimizer.zero_grad()
 
         # Calculate the loss
-        loss_v = common.calculateLoss(batch, net, targetNet.targetModel, gamma=GAMMA ** REWARD_STEPS, device=device)
+        validationLoss = common.calculateLoss(batch, net, targetNet.targetModel, gamma=GAMMA ** REWARD_STEPS, device=device)
 
         # Backpropagate the loss
-        loss_v.backward()
+        validationLoss.backward()
 
         # Update the weights
         optimizer.step()
@@ -140,68 +140,91 @@ if __name__ == "__main__":
         # Update the epsilon
         epsilonTracker.frame(engine.state.iteration)
 
+        # If evalStates is not set...
         if getattr(engine.state, "evalStates", None) is None:
+            # Get a sample of states to evaluate
             evalStates = buffer.sample(STATES_TO_EVALUATE)
             evalStates = [np.array(transition.state, copy=False)
                            for transition in evalStates]
             engine.state.evalStates = np.array(evalStates, copy=False)
 
+        # Return the loss and epsilon
         return {
-            "loss": loss_v.item(),
+            "loss": validationLoss.item(),
             "epsilon": selector.epsilon,
         }
 
+    # Create the engine to process the batch
     engine = Engine(processBatch)
-    tb = common.setupIgnite(engine, exp_source, f"conv-{args.run}", extra_metrics=('values_mean',))
 
+    # Attach the tensorboard logger
+    tb = common.setupIgnite(engine, expSource, f"conv-{args.run}", extra_metrics=('MeanValue',))
+
+    # Set the TargetNet Sync engine
     @engine.on(Events.ITERATION_COMPLETED)
     def sync_eval(engine: Engine):
+        # Run every TARGETNET_SYNC_INTERNVAL iterations (Default: 1000)
         if engine.state.iteration % TARGETNET_SYNC_INTERNVAL == 0:
+            # Sync the targetNet with the net
             targetNet.sync()
 
-            mean_val = common.calculateStatesValues(
-                engine.state.evalStates, net, device=device)
-            engine.state.metrics["values_mean"] = mean_val
-            if getattr(engine.state, "best_mean_val", None) is None:
-                engine.state.best_mean_val = mean_val
-            if engine.state.best_mean_val < mean_val:
-                print("%d: Best mean value updated %.3f -> %.3f" % (
-                    engine.state.iteration, engine.state.best_mean_val,
-                    mean_val))
-                path = savesPath / ("mean_value-%.3f.data" % mean_val)
-                torch.save(net.state_dict(), path)
-                engine.state.best_mean_val = mean_val
+            # Calculate the mean value of the states
+            meanValue = common.calculateStatesValues(engine.state.evalStates, net, device=device)
+            engine.state.metrics["MeanValue"] = meanValue
 
+            # If bestMeanValue is not set set it to meanValue
+            if getattr(engine.state, "bestMeanValue", None) is None:
+                engine.state.bestMeanValue = meanValue
+
+            # If meanValue is greater than bestMeanValue save the model
+            if engine.state.bestMeanValue < meanValue:
+                print("%d: Best mean value updated %.3f -> %.3f" % (engine.state.iteration, engine.state.bestMeanValue, meanValue))
+                path = savesPath / ("meanValueue-%.3f.data" % meanValue)
+                torch.save(net.state_dict(), path)
+                engine.state.bestMeanValue = meanValue
+
+    # Set the validation engine
     @engine.on(Events.ITERATION_COMPLETED)
     def validate(engine: Engine):
+        # Run every VALIDATION_INTERVAL iterations (Default: 10000)
         if engine.state.iteration % VALIDATION_INTERVAL == 0:
-            res = validation.validation_run(envTest, net, device=device)
+            # Test: Get/print the mean: reward, steps, order profits, order steps
+            res = validation.validationRun(envTest, net, device=device)
             print("%d: tst: %s" % (engine.state.iteration, res))
+            # Add the metrics to the engine
             for key, val in res.items():
                 engine.state.metrics[key + "_tst"] = val
-            res = validation.validation_run(envVal, net, device=device)
+
+            # Val: Get/print the mean: reward, steps, order profits, order steps
+            res = validation.validationRun(envVal, net, device=device)
             print("%d: val: %s" % (engine.state.iteration, res))
+            # Add the metrics to the engine
             for key, val in res.items():
                 engine.state.metrics[key + "_val"] = val
-            val_reward = res['episode_reward']
-            if getattr(engine.state, "best_val_reward", None) is None:
-                engine.state.best_val_reward = val_reward
-            if engine.state.best_val_reward < val_reward:
-                print("Best validation reward updated: %.3f -> %.3f, model saved" % (
-                    engine.state.best_val_reward, val_reward
-                ))
-                engine.state.best_val_reward = val_reward
-                path = savesPath / ("val_reward-%.3f.data" % val_reward)
+
+            # If bestValReward is not set set it to mean episode reward
+            valReward = res['episodeReward']
+            if getattr(engine.state, "bestValReward", None) is None:
+                engine.state.bestValReward = valReward
+
+            # If valReward is greater than bestValReward save the model
+            if engine.state.bestValReward < valReward:
+                print("Best validation reward updated: %.3f -> %.3f, model saved" % (engine.state.bestValReward, valReward))
+                engine.state.bestValReward = valReward
+                path = savesPath / ("valReward-%.3f.data" % valReward)
                 torch.save(net.state_dict(), path)
 
-
+    # Log event and metrics
     event = local_ignite.PeriodEvents.ITERS_10000_COMPLETED
-    tst_metrics = [m + "_tst" for m in validation.METRICS]
-    tst_handler = tb_logger.OutputHandler(tag="test", metric_names=tst_metrics)
+    metrics = [metric for metric in validation.METRICS]
+
+    # Create the logger for the test data
+    tst_handler = tb_logger.OutputHandler(tag="test", metric_names=metrics)
     tb.attach(engine, log_handler=tst_handler, event_name=event)
 
-    val_metrics = [m + "_val" for m in validation.METRICS]
-    val_handler = tb_logger.OutputHandler(tag="validation", metric_names=val_metrics)
+    # Create the logger for the validation data
+    val_handler = tb_logger.OutputHandler(tag="validation", metric_names=metrics)
     tb.attach(engine, log_handler=val_handler, event_name=event)
 
+    # Run the engine
     engine.run(common.batchGenerator(buffer, REPLAY_INITIAL, BATCH_SIZE))

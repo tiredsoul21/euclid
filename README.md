@@ -11,6 +11,7 @@ pip3 install gym==0.26.2
 pip3 install torch==2.1.2
 pip3 install pytorch-ignite==0.4.13
 pip3 install tensorboard==2.15.1
+pip3 install matplotlib==3.8.2
 ```
 
 ## Monitor
@@ -19,3 +20,9 @@ To see output visualizations:
 
 ## Dataset
 https://www.kaggle.com/datasets/tanavbajaj/yahoo-finance-all-stocks-dataset-daily-update
+
+## Execution
+```
+python3 src/00_example.py -p /home/derrick/data/daily_price_data -r test --cuda
+python3 src/run_model.py -d /home/derrick/data/daily_price_data/AAPL.csv -m output/00-test/val_reward-16.850.data -n test1
+```
