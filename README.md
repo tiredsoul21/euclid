@@ -9,6 +9,8 @@ source ml-env/bin/activate
 pip3 install numpy==1.26.3
 pip3 install gym==0.26.2
 pip3 install torch==2.1.2
+pip3 install pytorch-ignite==0.4.13
+pip3 install tensorboard==2.15.1
 ```
 
 ## Monitor
