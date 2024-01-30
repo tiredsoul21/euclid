@@ -158,7 +158,7 @@ if __name__ == "__main__":
     engine = Engine(processBatch)
 
     # Attach the tensorboard logger
-    tb = common.setupIgnite(engine, expSource, f"conv-{args.run}", extra_metrics=('MeanValue',))
+    tb = common.setupIgnite(engine, expSource, f"conv-{args.run}", extraMetrics=('MeanValue',))
 
     # Set the TargetNet Sync engine
     @engine.on(Events.ITERATION_COMPLETED)

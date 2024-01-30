@@ -324,7 +324,7 @@ class ExperienceReplayBuffer:
         # Increment the position
         self.pos = (self.pos + 1) % self.capacity
 
-    def populate(self, samples ):
+    def populate(self, samples: int):
         """
         Populates samples into the buffer
         :param samples: how many samples to populate
