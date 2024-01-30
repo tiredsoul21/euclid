@@ -20,30 +20,40 @@ class DQNConv1D(nn.Module):
             nn.ReLU(),
         )
 
-        out_size = self._getConvOut(shape)
+        convOutSize = self._getConvOut(shape)
 
         # Create fully connected layers - transform features into value
-        self.fc_val = nn.Sequential(
-            nn.Linear(out_size, 512),
+        self.fcValue = nn.Sequential(
+            nn.Linear(convOutSize, 512),
             nn.ReLU(),
             nn.Linear(512, 1)
         )
 
         # Create fully connected layers - transform features into advantage for each action
-        self.fc_adv = nn.Sequential(
-            nn.Linear(out_size, 512),
+        self.fcAdvantage = nn.Sequential(
+            nn.Linear(convOutSize, 512),
             nn.ReLU(),
             nn.Linear(512, actionCount)
         )
 
     def _getConvOut(self, shape):
-       o = self.conv(torch.zeros(1, *shape))
-       return o.view(1, -1).size(1)
+        """
+        Calculate the output size of the convolutional layers
+        :param shape: shape of the input
+        :return: size of the output
+        """
+        o = self.conv(torch.zeros(1, *shape))
+        return o.view(1, -1).size(1)
 
     def forward(self, x):
+        """
+        Forward pass of the model
+        :param x: input
+        :return: value and advantage
+        """
         convOut = self.conv(x).view(x.size()[0], -1)
-        val = self.fc_val(convOut)
-        adv = self.fc_adv(convOut)
+        val = self.fcValue(convOut)
+        adv = self.fcAdvantage(convOut)
         return val + (adv - adv.mean(dim=1, keepdim=True))
 
 class TargetNet:

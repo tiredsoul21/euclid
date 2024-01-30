@@ -19,13 +19,13 @@ from ignite.contrib.handlers import tensorboard_logger as tb_logger
 def calculateStatesValues(states,
                           net, 
                           device: str = "cpu"):
-    mean_vals = []
+    meanValues = []
     for batch in np.array_split(states, 64):
         states_v = torch.tensor(batch).to(device)
         action_values_v = net(states_v)
         best_action_values_v = action_values_v.max(1)[0]
-        mean_vals.append(best_action_values_v.mean().item())
-    return np.mean(mean_vals)
+        meanValues.append(best_action_values_v.mean().item())
+    return np.mean(meanValues)
 
 
 def unpackBatch(batch):

@@ -285,15 +285,21 @@ class ExperienceReplayBuffer:
 
 
     def __len__(self):
+        """
+        :return: length of the buffer
+        """
         return len(self.buffer)
 
     def __iter__(self):
+        """
+        Calls base iter
+        :return: iterator over the buffer
+        """
         return iter(self.buffer)
 
     def sample(self, batch_size):
         """
         Get one random batch from experience replay
-        TODO: implement sampling order policy
         :param batch_size:
         :return:
         """
