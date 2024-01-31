@@ -43,6 +43,7 @@ def readCSV(fileName: str, sep: str =',', fixOpenPrice: bool = False) -> Prices:
         openPrice, highPrice, lowPrice, closePrice, volume = [], [], [], [], []
         countOut, countFixed = 0, 0
         lastClose = None
+        lastZeroIdx = None
 
         # Read in data
         for row in reader:
@@ -58,6 +59,10 @@ def readCSV(fileName: str, sep: str =',', fixOpenPrice: bool = False) -> Prices:
                     pl = min(pl, po)
                     ph = max(ph, po)
             countOut += 1
+
+            if po == 0:
+                lastZeroIdx = countOut - 1
+
             openPrice.append(po)
             closePrice.append(pc)
             highPrice.append(ph)
@@ -65,7 +70,15 @@ def readCSV(fileName: str, sep: str =',', fixOpenPrice: bool = False) -> Prices:
             volume.append(pv)
             lastClose = pc
 
-    print("Read done, got %d rows, %d open prices adjusted" % (countOut, countFixed))
+    if lastZeroIdx is not None:
+        print("file %s has zero open price at index %d" % (fileName, lastZeroIdx))
+        openPrice = openPrice[lastZeroIdx + 1:]
+        closePrice = closePrice[lastZeroIdx + 1:]
+        highPrice = highPrice[lastZeroIdx + 1:]
+        lowPrice = lowPrice[lastZeroIdx + 1:]
+        volume = volume[lastZeroIdx + 1:]
+
+
     return Prices(open=  np.array(openPrice,   dtype=np.float32),
                   high=  np.array(highPrice,   dtype=np.float32),
                   low=   np.array(lowPrice,    dtype=np.float32),
@@ -88,7 +101,6 @@ def relativePrices(prices: Prices) -> Prices:
     relClose = (prices.close - prices.open) / prices.open
 
     # Return tuple with relative prices
-    print("Relative prices generated")
     return Prices(open=prices.open, 
                   high=relHigh,
                   low=relLow, 

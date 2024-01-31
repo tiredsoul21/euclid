@@ -179,7 +179,7 @@ if __name__ == "__main__":
             # If meanValue is greater than bestMeanValue save the model
             if engine.state.bestMeanValue < meanValue:
                 print("%d: Best mean value updated %.3f -> %.3f" % (engine.state.iteration, engine.state.bestMeanValue, meanValue))
-                path = savesPath / ("meanValueue-%.3f.data" % meanValue)
+                path = savesPath / ("meanValue-%.3f.data" % meanValue)
                 torch.save(net.state_dict(), path)
                 engine.state.bestMeanValue = meanValue
 
@@ -216,13 +216,14 @@ if __name__ == "__main__":
 
     # Log event and metrics
     event = local_ignite.PeriodEvents.ITERS_10000_COMPLETED
-    metrics = [metric for metric in validation.METRICS]
 
     # Create the logger for the test data
+    metrics = [metric + "_tst" for metric in validation.METRICS]
     tst_handler = tb_logger.OutputHandler(tag="test", metric_names=metrics)
     tb.attach(engine, log_handler=tst_handler, event_name=event)
 
     # Create the logger for the validation data
+    metrics = [metric + "_val" for metric in validation.METRICS]
     val_handler = tb_logger.OutputHandler(tag="validation", metric_names=metrics)
     tb.attach(engine, log_handler=val_handler, event_name=event)
 

@@ -110,7 +110,7 @@ class ExperienceSource:
             for idx, state in enumerate(states):
                 if state is None:
                     # Add random action if state is None
-                    actions[idx] = self.pool[0].action_space.sample()
+                    actions[idx] = self.pool[0].actionSpace.sample()
                 else:
                     # Add state
                     statesInput.append(state)

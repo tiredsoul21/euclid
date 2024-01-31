@@ -24,5 +24,5 @@ https://www.kaggle.com/datasets/tanavbajaj/yahoo-finance-all-stocks-dataset-dail
 ## Execution
 ```
 python3 src/00_example.py -p /home/derrick/data/daily_price_data -r test --cuda
-python3 src/run_model.py -d /home/derrick/data/daily_price_data/AAPL.csv -m output/00-test/val_reward-16.850.data -n test1
+python3 src/run_model.py -d /home/derrick/data/daily_price_data/test/FOX.csv -m output/00-test/valReward-13.596.data -n test1
 ```

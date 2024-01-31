@@ -14,7 +14,7 @@ class DQNConv1D(nn.Module):
 
         # Create convolutional layers - transform time series into features
         self.conv = nn.Sequential(
-            nn.Conv1d(shape[0], 128, 5),
+            nn.Conv1d(shape[0]-2, 128, 5),
             nn.ReLU(),
             nn.Conv1d(128, 128, 5),
             nn.ReLU(),
@@ -42,8 +42,10 @@ class DQNConv1D(nn.Module):
         :param shape: shape of the input
         :return: size of the output
         """
-        o = self.conv(torch.zeros(1, *shape))
-        return o.view(1, -1).size(1)
+        # Remove the last 2 columns (col4 and col5)
+        tempShape = (shape[0]-2, shape[1])
+        o = self.conv(torch.zeros(1, *tempShape))
+        return o.view(1, -1).size(1) + 2
 
     def forward(self, x):
         """
@@ -51,7 +53,14 @@ class DQNConv1D(nn.Module):
         :param x: input
         :return: value and advantage
         """
-        convOut = self.conv(x).view(x.size()[0], -1)
+        # use first 3 channels for convolutional layers
+        convOut = self.conv(x[:, :3, :]).view(x.size()[0], -1)
+
+        # use last 2 channels for fully connected layers
+        col4Val = x[:, 3, 1].unsqueeze(1)
+        col5Val = x[:, 4, 1].unsqueeze(1)
+        convOut = torch.cat([convOut, col4Val, col5Val], dim=1)
+
         val = self.fcValue(convOut)
         adv = self.fcAdvantage(convOut)
         return val + (adv - adv.mean(dim=1, keepdim=True))
