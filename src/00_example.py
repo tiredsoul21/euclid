@@ -27,7 +27,7 @@ SAVES_DIR = pathlib.Path("output")
 # How many bars to feed into the model
 BAR_COUNT = 50
 
-BATCH_SIZE = 32
+BATCH_SIZE = 64
 
 # EPSILON GREEDY - for exploration
 EPS_START = 1.0
@@ -59,7 +59,7 @@ if __name__ == "__main__":
     device = torch.device("cuda" if args.cuda else "cpu")
 
     # Create output directory
-    savesPath = SAVES_DIR / f"00-{args.run}"
+    savesPath = SAVES_DIR / f"03-{args.run}"
     savesPath.mkdir(parents=True, exist_ok=True)
 
     # Set data paths

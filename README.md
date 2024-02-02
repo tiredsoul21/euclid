@@ -24,5 +24,15 @@ https://www.kaggle.com/datasets/tanavbajaj/yahoo-finance-all-stocks-dataset-dail
 ## Execution
 ```
 python3 src/00_example.py -p /home/derrick/data/daily_price_data -r test --cuda
-python3 src/run_model.py -d /home/derrick/data/daily_price_data/test/FOX.csv -m output/00-test/valReward-13.596.data -n test1
+python3 src/run_model.py -d /home/derrick/data/daily_price_data/test/FOX.csv -m valReward-27.282.data -n test1
+```
+
+## Runs
+```
+  test-00 :: EPS_STEPS 1M || BATCH_SIZE 32  ||
+  test-01 :: EPS_STEPS 2M || BATCH_SIZE 64  ||
+  test-02 :: EPS_STEPS 1M || BATCH_SIZE 128 ||
+* test-03 :: EPS_STEPS 1M || BATCH_SIZE 64  ||
+------------------------------------------------------------------------------------
+
 ```
