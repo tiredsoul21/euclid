@@ -307,3 +307,89 @@ class ExperienceReplayBuffer:
         for _ in range(samples):
             entry = next(self.experienceSourceIter)
             self._add(entry)
+
+class PrioritizedReplayBuffer(ExperienceReplayBuffer):
+    @property
+    def _maxPriority(self):
+        return 1.0
+
+    def __init__(self,
+                 experienceSource: ExperienceSource,
+                 bufferSize: int,
+                 alpha: float):
+        super(PrioritizedReplayBuffer, self).__init__(experienceSource, bufferSize)
+
+        # Check input parameters
+        assert isinstance(experienceSource, ExperienceSource)
+        assert isinstance(bufferSize, int) and bufferSize > 0
+        assert isinstance(alpha, float) and alpha > 0
+
+        # Initialize variables
+        self._alpha = alpha
+        capacity = 2 ** math.ceil(math.log2(bufferSize))
+        self._sumSegTree = utils.SumSegmentTree(capacity)
+        self._minSegTree = utils.MinSegmentTree(capacity)
+
+    def _add(self, *args, **kwargs):
+        super()._add(*args, **kwargs)
+
+        idx = self.pos
+        priority = self._maxPriority ** self._alpha
+        
+        # Add the priority to the sum and min segment trees
+        self._sumSegTree[idx] = priority
+        self._minSegTree[idx] = priority
+
+    def _sampleProportional(self, batchSize: int):
+        """
+        Generates random masses, scales them based on the sum of priorities.
+        Uses these scaled masses to sample indices from the sum tree.
+        This sampling process gives higher probabilities to transitions with higher priorities.
+        :param batchSize: size of the batch
+        :return: list of indices
+        """
+        # Generate a random mass and find the indices
+        mass = np.random.random(batchSize) * self._sumSegTree.sum(0, len(self) - 1)
+        idx = self._sumSegTree.find_prefixsum_idx(mass)
+        return idx.tolist()
+
+    def sample(self, batchSize: int, beta: float):
+        """
+        Sample a batch of experiences
+        :param batchSize: size of the batch
+        :param beta: beta parameter for prioritized replay buffer
+        :return: list of experiences
+        """
+
+        # Check input parameters
+        assert isinstance(beta, float) and beta > 0
+        assert isinstance(batchSize, int) and 0 < batchSize <= len(self)
+
+        # Sample indices
+        indices = self._sampleProportional(batchSize)
+        totalPriority = self._sumSegTree.sum()
+        pMin = self._minSegTree.min() / totalPriority
+        maxWeight = (pMin * len(self)) ** (-beta)
+
+        # Calculate the weights
+        weights = [(self._sumSegTree[idx] / totalPriority * len(self)) ** (-beta) / maxWeight for idx in indices]
+        weights = np.array(weights, dtype=np.float32)
+
+        # Get the samples
+        samples = [self.buffer[idx] for idx in indices]
+        return samples, indices, weights
+
+    def updatePriorities(self, indices, priorities):
+        """
+        Update priorities of sampled transitions
+        :param indices: list of sample indices
+        :param priorities: list of sample priorities
+        """
+        # Check input parameters
+        assert len(indices) == len(priorities)
+        assert all(priority > 0 for priority in priorities)
+        assert all(0 <= idx < len(self) for idx in indices)
+
+        self._sumSegTree = [priority ** self._alpha if idx in indices else self._sumSegTree[idx] for idx, priority in enumerate(self._sumSegTree)]
+        self._minSegTree = [priority ** self._alpha if idx in indices else self._minSegTree[idx] for idx, priority in enumerate(self._minSegTree)]
+        self._maxPriority = max(self._maxPriority, max(priorities))
