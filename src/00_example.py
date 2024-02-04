@@ -25,27 +25,35 @@ from lib import ignite as local_ignite
 SAVES_DIR = pathlib.Path("output")
 
 # How many bars to feed into the model
-BAR_COUNT = 50
+BAR_COUNT = 25
 
-BATCH_SIZE = 64
+BATCH_SIZE = 128
 
 # EPSILON GREEDY - for exploration
 EPS_START = 1.0
+# Final value of epsilon
 EPS_FINAL = 0.1
+# How many steps to decay the epsilon to EPS_FINAL
 EPS_STEPS = 1000000
 
+# Learning rate for neural network training
 LEARNING_RATE = 0.0001
+# Discount factor for future rewards
 GAMMA = 0.99
 
+# How far in the future to look for rewards
 REWARD_STEPS = 2
 
-REPLAY_SIZE = 100000
+# Size of the experience replay buffer
+REPLAY_SIZE = 500000
 REPLAY_INITIAL = 10000
 
+# How often to run validation and sync the target network
 VALIDATION_INTERVAL = 10000
 TARGETNET_SYNC_INTERNVAL = 1000
 
-STATES_TO_EVALUATE = 1000
+# Number of states to evaluate when syncing the target network
+STATES_TO_EVALUATE = 3000
 
 if __name__ == "__main__":
     # Parse command line arguments
@@ -59,7 +67,7 @@ if __name__ == "__main__":
     device = torch.device("cuda" if args.cuda else "cpu")
 
     # Create output directory
-    savesPath = SAVES_DIR / f"03-{args.run}"
+    savesPath = SAVES_DIR / f"07-{args.run}"
     savesPath.mkdir(parents=True, exist_ok=True)
 
     # Set data paths

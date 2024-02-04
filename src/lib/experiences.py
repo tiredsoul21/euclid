@@ -20,11 +20,8 @@ def _partition_list(items, lengths):
     :param lengths: list of integers
     :return: list of list of items partitioned by lengths
     """
-    result = []
-    offset = 0
-    for length in lengths:
-        result.append(items[offset:offset+length])
-        offset += length
+    # Iterate through the lengths and partition the items
+    result = [items[offset:offset+length] for offset, length in enumerate(lengths)]
     return result
 
 class ExperienceSource:
@@ -51,16 +48,12 @@ class ExperienceSource:
         # Check input parameters
         assert isinstance(env, (gym.Env, list, tuple))
         assert isinstance(agent, BaseAgent)
-        assert isinstance(stepsCount, int)
+        assert isinstance(stepsCount, int) and stepsCount >= 1
         assert isinstance(experienceInterval, int)
         assert isinstance(vectorized, bool)
-        assert stepsCount >= 1
 
         # Initialize variables
-        if isinstance(env, (list, tuple)):
-            self.pool = env
-        else:
-            self.pool = [env]
+        self.pool = env if isinstance(env, (list, tuple)) else [env]
         self.agent = agent
         self.stepsCount = stepsCount
         self.experienceInterval = experienceInterval
@@ -83,38 +76,24 @@ class ExperienceSource:
             obs = env.reset()
 
             # Store the states for each environment
-            if self.vectorized:
-                obsLengths = len(obs)
-                states.extend(obs)
-            else:
-                obsLengths = 1
-                states.append(obs)
+            obsLengths = len(obs) if self.vectorized else 1
+            states.extend(obs) if self.vectorized else states.append(obs)
             envLengths.append(obsLengths)
 
-            # Loop through the observations and initialize starting values
-            for _ in range(obsLengths):
-                histories.append(deque(maxlen=self.stepsCount))
-                currentReward.append(0.0)
-                currentSteps.append(0)
-                agentStates.append(self.agent.initialState())
+            # Initialize starting values
+            histories = [deque(maxlen=self.stepsCount) for _ in range(obsLengths)]
+            currentReward.extend([0.0] * obsLengths)
+            currentSteps.extend([0] * obsLengths)
+            agentStates.extend([self.agent.initialState() for _ in range(obsLengths)])
 
-        iterIndex = 0
         while True:
             # Initialize variables
-            actions = [None] * len(states)
-            statesInput = []
-            statesIndices = []
+            # Pick an environment and get the action space
+            actions = [self.pool[0].actionSpace.sample() if state is None else None for state in states]
+            # Filter out None states and their indices
+            statesInput = [state for state in states if state is not None]
+            statesIndices = [idx for idx, state in enumerate(states) if state is not None]
             globalOffset = 0
-
-            # Loop through the states
-            for idx, state in enumerate(states):
-                if state is None:
-                    # Add random action if state is None
-                    actions[idx] = self.pool[0].actionSpace.sample()
-                else:
-                    # Add state
-                    statesInput.append(state)
-                    statesIndices.append(idx)
 
             # Check if statesInput is empty
             if statesInput:
@@ -155,7 +134,7 @@ class ExperienceSource:
                         history.append(Experience(state=state, action=action, reward=r, done=isDone))
 
                     # if enough steps collected, yield the item
-                    if len(history) == self.stepsCount and iterIndex % self.experienceInterval == 0:
+                    if len(history) == self.stepsCount and currentSteps[idx] % self.experienceInterval == 0:
                         yield tuple(history)
 
                     states[idx] = nextState
@@ -186,17 +165,15 @@ class ExperienceSource:
 
                 # Update the global offset
                 globalOffset += len(actions)
-            iterIndex += 1
 
     def popTotalRewards(self):
         """
         Returns the total rewards and clears the list
         :return: total rewards
         """
-        reward = self.totalRewards
-        if reward:
-            self.totalRewards = []
-            self.totalSteps = []
+        reward = self.totalRewards.copy()
+        self.totalRewards.clear()
+        self.totalSteps.clear()
         return reward
 
     def popRewardsSteps(self):
@@ -205,8 +182,8 @@ class ExperienceSource:
         :return: total steps
         """
         result = list(zip(self.totalRewards, self.totalSteps))
-        if result:
-            self.totalRewards, self.totalSteps = [], []
+        self.totalRewards.clear()
+        self.totalSteps.clear()
         return result
 
 class ExperienceSourceFirstLast(ExperienceSource):
@@ -253,11 +230,8 @@ class ExperienceSourceFirstLast(ExperienceSource):
                 elems = exp[:-1]
 
             # Calculate the total reward
-            totalReward = 0.0
-            for e in reversed(elems):
-                totalReward *= self.gamma
-                totalReward += e.reward
-            
+            totalReward = sum(e.reward * (self.gamma ** i) for i, e in enumerate(reversed(elems)))
+
             yield ExperienceFirstLast(state=exp[0].state, action=exp[0].action,
                                       reward=totalReward, lastState=lastState)
 
@@ -297,16 +271,16 @@ class ExperienceReplayBuffer:
         """
         return iter(self.buffer)
 
-    def sample(self, batch_size):
+    def sample(self, batchSize):
         """
         Get one random batch from experience replay
-        :param batch_size:
+        :param batchSize:
         :return:
         """
-        if len(self.buffer) <= batch_size:
+        if len(self.buffer) <= batchSize:
             return self.buffer
         # Warning: replace=False makes random.choice O(n)
-        keys = np.random.choice(len(self.buffer), batch_size, replace=True)
+        keys = np.random.choice(len(self.buffer), batchSize, replace=True)
         return [self.buffer[key] for key in keys]
 
     def _add(self, sample):

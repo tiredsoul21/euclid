@@ -76,7 +76,8 @@ class StocksEnv(gym.Env):
         # set offset if randomOffset is True
         bars = self._state.barCount
         if self.randomOffset:
-            offset = self.np_random.choice(prices.high.shape[0]-bars*10) + bars
+            # offset keeps at least bars distance from the beginning and from the end
+            offset = self.np_random.choice(prices.high.shape[0]- 2 * bars) + bars
         else:
             offset = bars
 
@@ -270,11 +271,13 @@ class PriceState:
             self.havePosition = False
             self.openPrice = 0.0
 
+        # Check if the NEXT bar is out of bounds...if so this is the last step
+        done |= self.offset + 1 >= self.prices.close.shape[0] - 1
+        
         # Move forward
         self.offset += 1
         previousClose = close
         close = self._currentClose()
-        done |= self.offset >= self.prices.close.shape[0]-1
 
         if self.havePosition and not self.rewardOnClose:
             reward += 100.0 * (close / previousClose - 1.0)

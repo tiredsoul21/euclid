@@ -29,10 +29,12 @@ python3 src/run_model.py -d /home/derrick/data/daily_price_data/test/FOX.csv -m 
 
 ## Runs
 ```
-  test-00 :: EPS_STEPS 1M || BATCH_SIZE 32  ||
-  test-01 :: EPS_STEPS 2M || BATCH_SIZE 64  ||
-  test-02 :: EPS_STEPS 1M || BATCH_SIZE 128 ||
-* test-03 :: EPS_STEPS 1M || BATCH_SIZE 64  ||
+  test-00 :: EPS_STEPS 1M || BATCH_SIZE 32  || 50 Bars
+  test-01 :: EPS_STEPS 2M || BATCH_SIZE 64  || 50 Bars
+  test-02 :: EPS_STEPS 1M || BATCH_SIZE 128 || 50 Bars
+* test-03 :: EPS_STEPS 1M || BATCH_SIZE 64  || 50 Bars
 ------------------------------------------------------------------------------------
+  test-04 :: EPS_STEPS 1M || BATCH_SIZE 64  || 100 Bars
+  test-05 :: EPS_STEPS 1M || BATCH_SIZE 64  || 25 Bars
 
 ```

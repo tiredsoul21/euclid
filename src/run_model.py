@@ -23,7 +23,6 @@ if __name__ == "__main__":
     parser.add_argument("-b", "--bars", type=int, default=50, help="Count of bars to feed into the model")
     parser.add_argument("-n", "--name", required=True, help="Name to use in output images")
     parser.add_argument("--commission", type=float, default=0.0, help="Commission size in percent, default=0.1")
-    parser.add_argument("--conv", default=False, action="store_true", help="Use convolution model instead of FF")
     args = parser.parse_args()
 
     # Load our data into the environment
@@ -92,18 +91,75 @@ if __name__ == "__main__":
     # Market Performance
     performance = meanReward[-1] / prices[-1] * 100
 
-    # Generate the plot
+    # Generate the trade bands
     plt.clf()
     plt.plot(meanReward, label=" Mean Position")
     plt.fill_between(range(len(meanReward)), lowerCILimit, upperCILimit, color="blue", alpha=0.3)
     plt.plot(prices, label="Price")
     plt.title("Total reward, data=%s" % args.name)
     plt.ylabel("Reward, %")
-
-    # Add the market performance
     plt.text(len(meanReward) - 1, meanReward[-1], "Market\n%.2f" % performance, ha="center", va="bottom")
-
     plt.legend()
-    plt.savefig("rewards-%s.png" % args.name)
-    
+    plt.savefig("trade-bands-%s.png" % args.name)
+
+    # Plot the market performance over time
+    plt.clf()
+    plt.plot(meanReward / prices - 1, label="Agent performance")
+    plt.plot([0, len(meanReward)], [0, 0], linestyle="--", color="black", label="Market")
+    plt.title("Market performance, data=%s" % args.name)
+    plt.ylabel("Performance Vs Market, %")
+    plt.legend()
+    plt.savefig("trade-performance-%s.png" % args.name)
+
+    # Run the model model and plot the buy/sell points
+    obs = env.reset()
+    startPrice = env._state._currentClose()
+    totalReward = startPrice
+    stepIndex = 0
+    rewards = []
+    prices = []
+    buyPoints = []
+    sellPoints = []
+
+    while True:
+        stepIndex += 1
+        observationVector = torch.tensor([obs])
+        outputVector = net(observationVector)
+        actionIndex = outputVector.max(dim=1)[1].item()
+        if np.random.random() < EPSILON:
+            actionIndex = env.action_space.sample()
+        action = environments.Actions(actionIndex)
+
+        hasPosition = observationVector[0][3][1] > 0
+
+        rewardMultiplier = 1.0
+        if hasPosition:
+            rewardMultiplier = env._state._currentClose() / startPrice
+        if action == environments.Actions.Buy and not hasPosition:
+            startPrice = env._state._currentClose()
+            buyPoints.append(stepIndex)
+        if action == environments.Actions.Close and hasPosition:
+            totalReward *= rewardMultiplier
+            totalReward -= args.commission
+            totalReward -= args.commission
+            startPrice = 0.0
+            sellPoints.append(stepIndex)
+
+        rewards.append(totalReward * rewardMultiplier)
+        prices.append(env._state._currentClose())
+
+        obs, reward, done, _, _ = env.step(actionIndex)
+
+        if done:
+            print("Run %d, final reward: %.2f" % (len(allRewards), totalReward))
+            allRewards.append(rewards)
+            break
+
+    plt.clf()
+    plt.plot(prices, label="Price")
+    plt.plot(buyPoints, [prices[index] for index in buyPoints], "go", label="Buy")
+    plt.plot(sellPoints, [prices[index] for index in sellPoints], "ro", label="Sell")
+    plt.title("Trade points, data=%s" % args.name)
+    plt.legend()
+    plt.savefig("trade-points-%s.png" % args.name)
 
