@@ -57,11 +57,11 @@ class StocksEnv(gym.Env):
 
         # Build action space
         self.action_space = gym.spaces.Discrete(n=len(Actions))
-        self._state = PriceState(barCount = barCount,
-                            commission = commission,
-                            resetOnClose =resetOnClose,
-                            rewardOnClose=rewardOnClose,
-                            volumes=volumes)
+        self._state = PriceState(barCount=barCount,
+                                 commission=commission,
+                                 resetOnClose=resetOnClose,
+                                 rewardOnClose=rewardOnClose,
+                                 volumes=volumes)
         self.observation_space = gym.spaces.Box(low=-np.inf,
                                                 high=np.inf,
                                                 shape=self._state.shape,
@@ -70,14 +70,14 @@ class StocksEnv(gym.Env):
 
     def reset(self):
         # make selection of the instrument and price data
-        self._instrument = self.np_random.choice(list(self.prices.keys()))
+        self._instrument = np.random.choice(list(self.prices.keys()))
         prices = self.prices[self._instrument]
 
         # set offset if randomOffset is True
         bars = self._state.barCount
         if self.randomOffset:
             # offset keeps at least bars distance from the beginning and from the end
-            offset = self.np_random.choice(prices.high.shape[0]- 2 * bars) + bars
+            offset = np.random.choice(prices.high.shape[0] - 2 * bars) + bars
         else:
             offset = bars
 
@@ -85,7 +85,7 @@ class StocksEnv(gym.Env):
         self._state.reset(prices, offset)
         return self._state.encode()
 
-    def step(self, actionIdx):
+    def step(self, actionIdx: int):
         """
         Perform one step in our price, adjust offset, check for the end of prices
         and handle position change
@@ -131,7 +131,7 @@ class StocksEnv(gym.Env):
         :return: list of seeds
         """
         # Create random seed
-        self.np_random, seed1 = seeding.np_random(seed)
+        np_random, seed1 = seeding.np_random(seed)
         # Create second seed in range [0, 2**31)
         seed2 = hash(seed1 + 1) % 2 ** 31
         return [seed1, seed2]
@@ -209,8 +209,8 @@ class PriceState:
 
         # Initialize result array and set start and stop indices
         res = np.zeros(shape=self.shape, dtype=np.float32)
-        start = self.offset-(self.barCount-1)
-        stop = self.offset+1
+        start = self.offset - (self.barCount - 1)
+        stop = self.offset + 1
 
         # Set values
         res[0] = self.prices.high[start:stop]
@@ -226,7 +226,7 @@ class PriceState:
         # Set position if needed
         if self.havePosition:
             res[destIdx] = 1.0
-            res[destIdx+1] = self._currentClose() / self.openPrice - 1.0
+            res[destIdx + 1] = self._currentClose() / self.openPrice - 1.0
 
         return res
 
@@ -273,7 +273,7 @@ class PriceState:
 
         # Check if the NEXT bar is out of bounds...if so this is the last step
         done |= self.offset + 1 >= self.prices.close.shape[0] - 1
-        
+
         # Move forward
         self.offset += 1
         previousClose = close

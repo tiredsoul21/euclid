@@ -33,57 +33,40 @@ def readCSV(fileName: str, sep: str =',', fixOpenPrice: bool = False) -> Prices:
         # Check if 'open' is in header
         if 'Open' not in h:
             # Return an empty value set
-            print("Error: 'open' not found in header.")
-            return None
-        
+            raise ValueError("'open' not found in header.")
+
         # Get indices of open, high, low, close, volume
         indices = [h.index(s) for s in ('Open', 'High', 'Low', 'Close', 'Volume')]
 
         # Initialize variables
-        openPrice, highPrice, lowPrice, closePrice, volume = [], [], [], [], []
-        countOut, countFixed = 0, 0
-        lastClose = None
-        lastZeroIdx = None
+        data = np.array(list(reader))
 
-        # Read in data
-        for row in reader:
-            # Get values
-            po, ph, pl, pc, pv = list(map(float, [row[idx] for idx in indices]))
+        # Extract numeric columns
+        numeric_data = data[:, indices].astype(np.float32)
 
-            # fix open price for current bar to match close price of last bar
-            if fixOpenPrice and lastClose is not None:
-                ppc = lastClose
-                if abs(po - ppc) > 1e-8:
-                    countFixed += 1
-                    po = ppc
-                    pl = min(pl, po)
-                    ph = max(ph, po)
-            countOut += 1
+        openPrice, highPrice, lowPrice, closePrice, volume, *_ = numeric_data.T
 
-            if po == 0:
-                lastZeroIdx = countOut - 1
+        # Fix open price to match close price of last bar
+        if fixOpenPrice:
+            closePriceShifted = np.roll(closePrice, 1)
+            closePriceShifted[0] = closePrice[0]
+            mask = np.abs(openPrice - closePriceShifted) > 1e-8
+            openPrice[mask] = closePriceShifted[mask]
+            lowPrice = np.minimum(lowPrice, openPrice)
+            highPrice = np.maximum(highPrice, openPrice)
 
-            openPrice.append(po)
-            closePrice.append(pc)
-            highPrice.append(ph)
-            lowPrice.append(pl)
-            volume.append(pv)
-            lastClose = pc
+        # Remove rows with zero open price
+        zeroPriceIndices = np.where(openPrice == 0)[0]
+        if zeroPriceIndices.size > 0:
+            print(f"File {fileName} has zero open price til {zeroPriceIndices[-1]}")
+            lastZeroIdx = zeroPriceIndices[-1]
+            openPrice = openPrice[lastZeroIdx + 1:]
+            closePrice = closePrice[lastZeroIdx + 1:]
+            highPrice = highPrice[lastZeroIdx + 1:]
+            lowPrice = lowPrice[lastZeroIdx + 1:]
+            volume = volume[lastZeroIdx + 1:]
 
-    if lastZeroIdx is not None:
-        print("file %s has zero open price at index %d" % (fileName, lastZeroIdx))
-        openPrice = openPrice[lastZeroIdx + 1:]
-        closePrice = closePrice[lastZeroIdx + 1:]
-        highPrice = highPrice[lastZeroIdx + 1:]
-        lowPrice = lowPrice[lastZeroIdx + 1:]
-        volume = volume[lastZeroIdx + 1:]
-
-
-    return Prices(open=  np.array(openPrice,   dtype=np.float32),
-                  high=  np.array(highPrice,   dtype=np.float32),
-                  low=   np.array(lowPrice,    dtype=np.float32),
-                  close= np.array(closePrice,  dtype=np.float32),
-                  volume=np.array(volume,      dtype=np.float32))
+    return Prices(open=openPrice, high=highPrice, low=lowPrice, close=closePrice, volume=volume)
 
 def relativePrices(prices: Prices) -> Prices:
     """
@@ -95,7 +78,7 @@ def relativePrices(prices: Prices) -> Prices:
     # Check input parameters
     assert isinstance(prices, Prices)
 
-    # Calculate relative prices
+    # Calculate relative prices using vectorized operations
     relHigh = (prices.high - prices.open) / prices.open
     relLow = (prices.low - prices.open) / prices.open
     relClose = (prices.close - prices.open) / prices.open
@@ -117,14 +100,8 @@ def findFiles(path: pathlib.Path) -> list:
     # Check input parameters
     assert isinstance(path, pathlib.Path)
 
-    # Initialize return
-    result = []
-    token = '*.csv'
-    
     # Search for files and return
-    for path in glob.glob(os.path.join(path, token)):
-        result.append(path)
-    return result
+    return [path for path in glob.glob(os.path.join(path, '*.csv'))]
 
 def loadRelative(csvFile: str) -> Prices:
     """

@@ -38,7 +38,7 @@ class EpsilonGreedyActionSelector(ActionSelector):
         # Select and return actions
         actions = self.selector(scores)
         mask = np.random.random(size=batchSize) < self.epsilon
-        randomActions = np.random.choice(actionCount, sum(mask))
+        randomActions = np.random.choice(actionCount, size=sum(mask))
         actions[mask] = randomActions
         return actions
     

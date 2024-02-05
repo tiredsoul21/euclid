@@ -15,9 +15,7 @@ from ignite.metrics import RunningAverage
 from ignite.contrib.handlers import tensorboard_logger as tb_logger
 
 @torch.no_grad()
-def calculateStatesValues(states,
-                          net, 
-                          device: str = "cpu"):
+def calculateStatesValues(states, net, device: str = "cpu"):
     """
     Calculate the values of the states
     :param states: states to calculate the values of
@@ -25,14 +23,15 @@ def calculateStatesValues(states,
     :param device: device to use
     """
     meanValues = []
-    for batch in np.array_split(states, 64):
+    statesV = torch.tensor(states).to(device)
+    for batch in torch.split(statesV, 64):
         # Run the batch through the network
-        statesV = torch.tensor(batch).to(device)
-        actionValuesV = net(statesV)
+        actionValuesV = net(batch)
         # Get the best action values
         bestActionValuesV = actionValuesV.max(1)[0]
         # Get the mean of the best action values
-        meanValues.append(bestActionValuesV.mean().item())
+        meanValues.append(torch.mean(bestActionValuesV).item())
+        
     # Return the mean of the mean values
     return np.mean(meanValues)
 
@@ -92,9 +91,10 @@ def calculateLoss(batch,
 
     # Calculate the state action values
     stateActionValues = net(statesV).gather(1, actionsV.unsqueeze(-1)).squeeze(-1)
-    nextStateActions = net(nextStateV).max(1)[1]
-    nextStateValues = targetNet(nextStateV).gather(1, nextStateActions.unsqueeze(-1)).squeeze(-1)
-    nextStateValues[doneMask] = 0.0
+    with torch.no_grad():
+        nextStateActions = net(nextStateV).max(1)[1]
+        nextStateValues = targetNet(nextStateV).gather(1, nextStateActions.unsqueeze(-1)).squeeze(-1)
+        nextStateValues[doneMask] = 0.0
 
     #Calculate the reward + discounted next state value
     meanStateActionValues = rewardsV + nextStateValues.detach() * gamma
