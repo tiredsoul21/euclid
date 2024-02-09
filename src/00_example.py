@@ -25,9 +25,9 @@ from lib import ignite as local_ignite
 SAVES_DIR = pathlib.Path("output")
 
 # How many bars to feed into the model
-BAR_COUNT = 25
+BAR_COUNT = 50
 
-BATCH_SIZE = 128
+BATCH_SIZE = 64
 
 # EPSILON GREEDY - for exploration
 EPS_START = 1.0
