@@ -1,26 +1,20 @@
-"""
-Agent is something which converts states into actions and has state
-"""
-import copy
 import numpy as np
 import torch
-import torch.nn.functional as F
 
-from . import actions
-
+from lib import actions
 
 class BaseAgent:
     """
     Abstract Agent interface
     """
-    def initialState(self):
+    def initialState(self) -> any:
         """
         Should create initial empty state for the agent. It will be called for the start of the episode
         :return: Anything agent wants to remember
         """
         return None
 
-    def __call__(self, states, agentStates):
+    def __call__(self, states: list, agentStates) -> tuple:
         """
         Convert observations and states into actions to take
         :param states: list of environment states to process
@@ -35,8 +29,7 @@ class BaseAgent:
 
         raise NotImplementedError
 
-
-def defaultStatesPreprocessor(states):
+def defaultStatesPreprocessor(states: list) -> torch.Tensor:
     """
     Convert list of states into the form suitable for model. By default we assume Variable
     :param states: list of numpy arrays with states
@@ -47,15 +40,15 @@ def defaultStatesPreprocessor(states):
         npStates = np.expand_dims(states[0], 0)
     else:
         # Transpose list of arrays into array of arrays
-        npStates = np.array([np.array(s, copy=False) for s in states], copy=False)
-    return torch.tensor(npStates)
+        npStates = np.array(states)
+    return torch.from_numpy(npStates)
 
 class DQNAgent(BaseAgent):
     """
     DQNAgent is a memoryless DQN agent which calculates Q values
     from the observations and  converts them into the actions using actionSelector
     """
-    def __init__(self,dqnModel, actionSelector, device="cpu", preprocessor=defaultStatesPreprocessor):
+    def __init__(self, dqnModel, actionSelector, device="cpu", preprocessor=defaultStatesPreprocessor):
         """
         Create DQN-based agent
         :param dqnModel: DQN model to use for action calculation
@@ -68,19 +61,15 @@ class DQNAgent(BaseAgent):
         self.preprocessor = preprocessor
         self.device = device
 
-    # Skip gradient calculation on forward pass
+    # Skip gradient calculation on agent's call of the model
     @torch.no_grad()
-    def __call__(self, states, agentStates=None):
+    def __call__(self, states: list, agentStates=None) -> tuple:
         if agentStates is None:
             # Create initial empty state
             agentStates = [None] * len(states)
         if self.preprocessor is not None:
-            # Preprocess states if needed
-            states = self.preprocessor(states)
-            # Checks if states is a tensor before moving it to the device
-            if torch.is_tensor(states):
-                states = states.to(self.device)
-            # May need to catch if states is not a tensor?
+            states = self.preprocessor(states).to(self.device)
+        
         # Calculate Q values - forward pass of the model
         qValues = self.dqnModel(states)
         # Convert Q values into numpy array and move to CPU
