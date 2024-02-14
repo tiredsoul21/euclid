@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 
 from lib import experiences
 from lib import ignite as local_ignite
+from lib.utils import dictionaryStateToTensor
 
 from ignite.engine import Engine
 from ignite.metrics import RunningAverage
@@ -23,8 +24,14 @@ def calculateStatesValues(states, net, device: str = "cpu"):
     :param device: device to use
     """
     meanValues = []
-    statesV = torch.tensor(states).to(device)
-    for batch in torch.split(statesV, 64):
+    statesV = dictionaryStateToTensor(states.tolist(), device)
+    
+    # Assuming all tensors in statesV have the same length
+    batch_size = next(iter(statesV.values())).size(0)
+    
+    # Split each tensor separately and process batches
+    for i in range(0, batch_size, 64):
+        batch = {key: val[i:i+64] for key, val in statesV.items()}
         # Run the batch through the network
         actionValuesV = net(batch)
         # Get the best action values
@@ -48,7 +55,7 @@ def unpackBatch(batch):
     # For each experience in the batch...
     for exp in batch:
         # Add the experience to the lists
-        state = np.array(exp.state, copy=False)
+        state = exp.state
         states.append(state)
         actions.append(exp.action)
         rewards.append(exp.reward)
@@ -59,10 +66,10 @@ def unpackBatch(batch):
             # Will be masked anyway
             lastStates.append(state)
         else:
-            lastStates.append(np.array(exp.lastState, copy=False))
+            lastStates.append(exp.lastState)
     # Return the array of states, actions, rewards, dones, and last states
-    return np.array(states, copy=False), np.array(actions), np.array(rewards, dtype=np.float32), \
-           np.array(dones, dtype=np.uint8), np.array(lastStates, copy=False)
+    return states, np.array(actions), np.array(rewards, dtype=np.float32), \
+           np.array(dones, dtype=np.uint8), lastStates
 
 def calculateLoss(batch,
                   net,
@@ -83,16 +90,18 @@ def calculateLoss(batch,
     states, actions, rewards, dones, next_states = unpackBatch(batch)
 
     # Convert the batch to tensors
-    statesV = torch.tensor(states).to(device)
-    nextStateV = torch.tensor(next_states).to(device)
+    statesV = dictionaryStateToTensor(states, device)
+    nextStateV = dictionaryStateToTensor(next_states, device)
     actionsV = torch.tensor(actions).to(device)
     rewardsV = torch.tensor(rewards).to(device)
     doneMask = torch.BoolTensor(dones).to(device)
 
-    # Calculate the state action values
+    # Get the Q values for the action historically taken
     stateActionValues = net(statesV).gather(1, actionsV.unsqueeze(-1)).squeeze(-1)
     with torch.no_grad():
+        # Get the Q values for the next state with current policy
         nextStateActions = net(nextStateV).max(1)[1]
+        # Get the Q values for the next state with target policy
         nextStateValues = targetNet(nextStateV).gather(1, nextStateActions.unsqueeze(-1)).squeeze(-1)
         nextStateValues[doneMask] = 0.0
 

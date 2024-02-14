@@ -21,6 +21,9 @@ from lib import validation
 from lib import experiences
 from lib import environments
 from lib import ignite as local_ignite
+from lib.utils import dictionaryStateToTensor
+
+# python3 src/01_modular.py -p /home/derrick/data/daily_price_data -r test --cuda
 
 SAVES_DIR = pathlib.Path("output")
 
@@ -67,7 +70,7 @@ if __name__ == "__main__":
     device = torch.device("cuda" if args.cuda else "cpu")
 
     # Create output directory
-    savesPath = SAVES_DIR / f"07-{args.run}"
+    savesPath = SAVES_DIR / f"08-{args.run}"
     savesPath.mkdir(parents=True, exist_ok=True)
 
     # Set data paths
@@ -96,7 +99,6 @@ if __name__ == "__main__":
         index = dataPath.stem
         priceData = {index: data.readCSV(str(dataPath)) }
         env = environments.StocksEnv(priceData, barCount=BAR_COUNT)
-        env._state.barCount = BAR_COUNT
     elif dataPath.is_dir():
         env = environments.StocksEnv.fromDirectory(dataPath, barCount=BAR_COUNT)
     else:
@@ -116,7 +118,7 @@ if __name__ == "__main__":
     epsilonTracker = actions.EpsilonTracker(selector, EPS_START, EPS_FINAL, EPS_STEPS)
 
     # Create the agent
-    agent = agents.DQNAgent(net, selector, device=device)
+    agent = agents.DQNAgent(net, selector, device=device, preprocessor=dictionaryStateToTensor)
 
     # Create the experience source
     expSource = experiences.ExperienceSourceFirstLast(env, agent, GAMMA, stepsCount=REWARD_STEPS)
@@ -152,8 +154,7 @@ if __name__ == "__main__":
         if getattr(engine.state, "evalStates", None) is None:
             # Get a sample of states to evaluate
             evalStates = buffer.sample(STATES_TO_EVALUATE)
-            evalStates = [np.array(transition.state, copy=False)
-                           for transition in evalStates]
+            evalStates = [transition.state for transition in evalStates]
             engine.state.evalStates = np.array(evalStates, copy=False)
 
         # Return the loss and epsilon

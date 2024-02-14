@@ -7,7 +7,8 @@ from scipy.stats import ttest_1samp
 
 from lib import data
 from lib import models
-from lib import environments
+from lib.environments import StocksEnv, Actions
+from lib.utils import dictionaryStateToTensor
 
 import torch
 
@@ -15,16 +16,17 @@ import matplotlib as mpl
 mpl.use("Agg")
 import matplotlib.pyplot as plt
 
-EPSILON = 0.02
+P_MASS = True
 RUNS = 100
 
 # python3 src/run_model.py -d /home/derrick/data/daily_price_data/test/ -m valReward-22.174.data -n test-01
 # python3 src/run_model.py -d /home/derrick/data/daily_price_data/test/FOX.csv -m valReward-22.174.data -n test-01
 # python3 src/run_model.py -d results-test-01.json -o "plot" -n test1
 
-def createPlots(data, name, significance=0.05):
+def createPlots(data, detData, name, significance=0.05):
     tStat, pValue = ttest_1samp(data, 0)
 
+    print("----------------P-Mass walk-------------")
     print("Null hypothesis: the mean is equal to zero")
     print("Probability that the null hypothesis is true: %.4f" % pValue)
     print("Significance level: %.4f" % significance)
@@ -32,20 +34,36 @@ def createPlots(data, name, significance=0.05):
     print("Mean: %.8f" % np.mean(data))
     print("Standard deviation: %.4f" % np.std(data))
 
+    print("--------------Deterministic-------------")
+    print("Null hypothesis: the mean is equal to zero")
+    print("Probability that the null hypothesis is true: %.4f" % pValue)
+    print("Significance level: %.4f" % significance)
+    print("p-value: %.4f, t-statistic: %.4f" % (pValue, tStat))
+    print("Mean: %.8f" % np.mean(detData))
+    print("Standard deviation: %.4f" % np.std(detData))
+
     with open("norm-performance-%s.txt" % name, "w") as file:
+        file.write("----------------P-Mass walk-------------\n")
         file.write("Null hypothesis: the mean is equal to zero\n")
         file.write("Probability that the null hypothesis is true: %.4f\n" % pValue)
         file.write("Significance level: %.4f\n" % significance)
         file.write("p-value: %.4f, t-statistic: %.4f\n" % (pValue, tStat))
         file.write("Mean: %.8f\n" % np.mean(data))
         file.write("Standard deviation: %.4f\n" % np.std(data))
+        file.write("----------------Deterministic-------------\n")
+        file.write("Null hypothesis: the mean is equal to zero\n")
+        file.write("Probability that the null hypothesis is true: %.4f\n" % pValue)
+        file.write("Significance level: %.4f\n" % significance)
+        file.write("p-value: %.4f, t-statistic: %.4f\n" % (pValue, tStat))
+        file.write("Mean: %.8f\n" % np.mean(detData))
+        file.write("Standard deviation: %.4f\n" % np.std(detData))
 
     if pValue < significance:
         print("The mean is statistically significantly different from zero.")
     else:
         print("The mean is not statistically significantly different from zero.")
 
-    # Plot bar whisker plot of the normalized performance
+    # Plot histogram plot of the normalized performance
     plt.clf()
     plt.hist(data, bins=20)
     plt.title("Normalized performance, data=%s" % name)
@@ -53,12 +71,25 @@ def createPlots(data, name, significance=0.05):
     plt.xlabel("Normalized performance")
     plt.savefig("norm-performance-%s.png" % name)
 
-    # Plot histogram of the normalized performance
+    # Plot histogram plot of the deterministic normalized performance
     plt.clf()
-    plt.boxplot(data)
-    plt.title("Normalized performance, data=%s" % name)
+    plt.hist(detData, bins=20)
+    plt.title("Deterministic normalized performance, data=%s" % name)
+    plt.ylabel("Frequency")
+    plt.xlabel("Normalized performance")
+    plt.savefig("norm-det-performance-%s.png" % name)
+
+    # Plot bar whisker of the normalized performance and deterministic in the same plot
+    plt.clf()
+    positions = [1, 2]
+    plt.boxplot(data, positions=[positions[0]], widths=0.6)
+    plt.boxplot(detData, positions=[positions[1]], widths=0.6)
+    plt.title("Normalized performance")
     plt.ylabel("Normalized performance")
+    plt.xlabel("Walks")
+    plt.xticks(positions, ["P-Mass Walk", "Deterministic"])
     plt.savefig("norm-performance-box-%s.png" % name)
+    
 
 def createPlotsFromFile(file, name):
     # Load the results
@@ -66,13 +97,14 @@ def createPlotsFromFile(file, name):
         results = json.load(file)
     
     normPerformance = []
+    detNormPerformance = []
     for result in results:
         for run in result:
             normPerformance.append(run[4])
-    print(normPerformance)
+            detNormPerformance.append(run[6])
 
     # Plot histogram of the normalized performance
-    createPlots(normPerformance, name)
+    createPlots(normPerformance, detNormPerformance, name)
 
 def runTest(args, file):
 
@@ -81,73 +113,110 @@ def runTest(args, file):
 
     # Load our data into the environment
     prices = data.loadRelative(file)
-    env = environments.StocksEnv({"TEST": prices},
-                                 barCount=args.bars,
-                                 resetOnClose=False,
-                                 commission=args.commission,
-                                 randomOffset=False,
-                                 rewardOnClose=False,
-                                 volumes=False)
+    env = StocksEnv({"TEST": prices},
+                    barCount=args.bars,
+                    resetOnClose=False,
+                    commission=args.commission,
+                    randomOffset=False,
+                    rewardOnClose=False,
+                    volumes=False)
 
     # Load our model
     net = models.DQNConv1D(env.observation_space.shape, env.action_space.n)
     net.load_state_dict(torch.load(args.model, map_location=lambda storage, loc: storage))
 
-    allRewards = []
+    walkAllRewards = []
     
-    for _ in range(RUNS):
-        # Iitialize everything
-        obs = env.reset()
-        startPrice = env._state._currentClose()
-        totalReward = startPrice # Starting with 1 share
-        stepIndex = 0
-        rewards = []
-        prices = []
+    # Iitialize Observaions
+    obs = env.reset()
+    obsWalks = [obs for _ in range(RUNS)]
+    obsWalks = dictionaryStateToTensor(obsWalks)
 
-        while True:
-            stepIndex += 1
-            observationVector = torch.tensor(np.array([obs]))
-            outputVector = net(observationVector)
-            actionIndex = outputVector.max(dim=1)[1].item()
-            if np.random.random() < EPSILON:
-                actionIndex = env.action_space.sample()
-            action = environments.Actions(actionIndex)
+    # Initialize start prices
+    detHasPosition = False
+    detStartPrice = env._state._currentClose()
+    detPosition = [detStartPrice]
+    walkHasPosition = [False for _ in range(RUNS)]
+    walkStartPrice = [detStartPrice for _ in range(RUNS)]
+    walkPosition = [[detStartPrice for _ in range(RUNS)]]
 
-            hasPosition = observationVector[0][3][1] > 0
+    # Initialize everything else
+    stepIndex = 0
+    prices = []
+    
+    # Run the model
+    while True:
+        stepIndex += 1
+        closePrice = env._state._currentClose()
 
-            rewardMultiplier = 1.0
-            if hasPosition:
-                rewardMultiplier = env._state._currentClose() / startPrice
-            if action == environments.Actions.Buy and not hasPosition:
-                startPrice = env._state._currentClose()
+        # Get the actions
+        walkOutput = net(obsWalks)
 
-            rewards.append(totalReward * rewardMultiplier)
-            prices.append(env._state._currentClose())
+        # Get the action by probability mass
+        walkActionIndex = torch.distributions.Categorical(torch.nn.functional.softmax(walkOutput, dim=1)).sample().tolist()
+        walkActionIndex = [Actions(actionIndex) for actionIndex in walkActionIndex]
 
-            if action == environments.Actions.Close and hasPosition:
-                totalReward *= rewardMultiplier
-                totalReward -= args.commission
-                totalReward -= args.commission
-                startPrice = 0.0
+        # Calculate the reward multiplier 
+        walkRewardMultiplier = [closePrice / startPrice if hasPosition else 1.0 for hasPosition, startPrice in zip(walkHasPosition, walkStartPrice)]
 
-            obs, reward, done, _, _ = env.step(actionIndex) 
-                
-            if done:
-                # print("Run %d, final reward: %.2f" % (len(allRewards), totalReward))
-                allRewards.append(rewards)
-                break
+        # Update the start price if we buy or keep the same price if we have a position
+        walkStartPrice = [startPrice if not hasPosition and actionIndex == Actions.Buy 
+                                     else closePrice 
+                                     for hasPosition, startPrice, actionIndex
+                                     in zip(walkHasPosition, walkStartPrice, walkActionIndex)]
+        # Update the position
+        walkPosition.append([position * rewardMultiplier for position, rewardMultiplier in zip(walkPosition[-1], walkRewardMultiplier)])
+
+        # Update the has position
+        walkPosition[-1] = [position if actionIndex != Actions.Close 
+                                     else position * rewardMultiplier - args.commission 
+                                     for position, actionIndex, rewardMultiplier 
+                                     in zip(walkPosition[-1], walkActionIndex, walkRewardMultiplier)]
+
+        # Update has position
+        walkHasPosition = [True if actionIndex == Actions.Buy and not hasPosition
+                                else False if actionIndex == Actions.Close and hasPosition
+                                else hasPosition
+                                for actionIndex, hasPosition in zip(walkActionIndex, walkHasPosition)]
+
+        # Same as above but for deterministic for one run
+        detOutput = net(dictionaryStateToTensor([obs]))
+        detActionIndex = Actions(torch.argmax(torch.nn.functional.softmax(detOutput, dim=1)).item())
+        detRewardMultiplier = closePrice / detStartPrice if detHasPosition else 1.0
+        detStartPrice = detStartPrice if not detHasPosition and detActionIndex == Actions.Buy else closePrice
+        detPosition.append(detPosition[-1] * detRewardMultiplier)
+        detPosition[-1] = detPosition[-1] if detActionIndex != Actions.Close else detPosition[-1] * detRewardMultiplier - args.commission
+        detHasPosition = True if detActionIndex == Actions.Buy and not detHasPosition else False if detActionIndex == Actions.Close and detHasPosition else detHasPosition
+
+        # Update the prices
+        prices.append(closePrice)
+
+        obs, _, done, _, _ = env.step(0)
+        obsWalks = dictionaryStateToTensor([obs for _ in range(RUNS)])
+
+        if done:
+            break
 
     # Get mean position over time and 95% confidence interval ready for output to file
-    meanReward = np.mean(allRewards, axis=0).tolist()
-    upperCILimit = np.percentile(allRewards, 97.5, axis=0).tolist()
-    lowerCILimit = np.percentile(allRewards, 2.5, axis=0).tolist()
-    
+    meanReward = [np.percentile(walk, 50) for walk in walkPosition]
+    upperCILimit = [np.percentile(walk, 97.5) for walk in walkPosition]
+    lowerCILimit = [np.percentile(walk, 2.5) for walk in walkPosition]
 
     # Market Performance
     performance = meanReward[-1] / prices[-1] - 1
-    normPerformance = performance/ stepIndex 
+    normPerformance = performance/ stepIndex
+    detPerformance = detPosition[-1] / prices[-1] - 1
+    detNormPerformance = detPerformance / stepIndex
 
-    return meanReward, upperCILimit, lowerCILimit, performance, normPerformance
+    # #plot price and mean reward and confidence interval
+    # plt.plot(prices, label="Price")
+    # plt.plot(meanReward, label="Mean Reward")
+    # plt.plot(detPosition, label="Deterministic Run")
+    # plt.fill_between(range(len(meanReward)), lowerCILimit, upperCILimit, color='gray', alpha=0.5)
+    # plt.legend()
+    # plt.savefig("price-mean-reward-%s.png" % args.name)
+
+    return meanReward, upperCILimit, lowerCILimit, performance, normPerformance, detPerformance, detNormPerformance
 
 if __name__ == "__main__":
     # Parse command line arguments

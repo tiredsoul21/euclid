@@ -53,14 +53,14 @@ class DQNConv1D(nn.Module):
         :param x: input
         :return: value and advantage
         """
-        # use first 3 channels for convolutional layers
-        convOut = self.conv(x[:, :3, :]).view(x.size()[0], -1)
+        # get priceData from dictionary
+        convOut = self.conv(x['priceData']).view(x['priceData'].size()[0], -1)
 
-        # use last 2 channels for fully connected layers
-        col4Val = x[:, 3, 1].unsqueeze(1)
-        col5Val = x[:, 4, 1].unsqueeze(1)
-        convOut = torch.cat([convOut, col4Val, col5Val], dim=1)
-
+        # Get/Append hasPosition and position
+        hasPosition = x['hasPosition']
+        position = x['position']
+        convOut = torch.cat([convOut, hasPosition, position], dim=1)
+        
         val = self.fcValue(convOut)
         adv = self.fcAdvantage(convOut)
         return val + (adv - adv.mean(dim=1, keepdim=True))

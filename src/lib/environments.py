@@ -1,8 +1,9 @@
+import enum
+
 import gym
 import gym.spaces
 from gym.utils import seeding
 from gym.envs.registration import EnvSpec
-import enum
 import numpy as np
 
 from lib import data
@@ -57,7 +58,7 @@ class StocksEnv(gym.Env):
 
         # Build action space
         self.action_space = gym.spaces.Discrete(n=len(Actions))
-        self._state = PriceState(barCount=barCount,
+        self._state = StockState(barCount=barCount,
                                  commission=commission,
                                  resetOnClose=resetOnClose,
                                  rewardOnClose=rewardOnClose,
@@ -150,7 +151,7 @@ class StocksEnv(gym.Env):
         }
         return StocksEnv(prices, **kwargs)
 
-class PriceState:
+class StockState:
     def __init__(self,
                  barCount: int,
                  commission: float,
@@ -204,31 +205,34 @@ class PriceState:
 
     def encode(self):
         """
-        Encode current state as numpy array
+        Encode current state a dictionary of numpy arrays
         """
 
-        # Initialize result array and set start and stop indices
-        res = np.zeros(shape=self.shape, dtype=np.float32)
-        start = self.offset - (self.barCount - 1)
-        stop = self.offset + 1
+        # Create dictionary
+        encodedData = {
+            'priceData': np.zeros(shape=(3, self.barCount), dtype=np.float32),
+            'volumeData': np.zeros(shape=(1, self.barCount), dtype=np.float32) if self.volumes else np.array(0, dtype=np.float32),
+            'hasPosition': np.array([0.0], dtype=np.float32),
+            'position': np.array([0.0], dtype=np.float32)
+        }
 
         # Set values
-        res[0] = self.prices.high[start:stop]
-        res[1] = self.prices.low[start:stop]
-        res[2] = self.prices.close[start:stop]
+        start = self.offset - (self.barCount - 1)
+        stop = self.offset + 1
+        encodedData['priceData'][0] = self.prices.high[start:stop]
+        encodedData['priceData'][1] = self.prices.low[start:stop]
+        encodedData['priceData'][2] = self.prices.close[start:stop]
 
         # Set volumes if needed
-        destIdx = 3
         if self.volumes:
-            res[3] = self.prices.volume[start:stop]
-            destIdx += 1
+            encodedData['volumeData'][0] = self.prices.volume[start:stop]
 
         # Set position if needed
         if self.havePosition:
-            res[destIdx] = 1.0
-            res[destIdx + 1] = self._currentClose() / self.openPrice - 1.0
+            encodedData['hasPosition'][0] = 1.0
+            encodedData['position'][0] = self._currentClose() / self.openPrice - 1.0
 
-        return res
+        return encodedData
 
     def _currentClose(self):
         """
