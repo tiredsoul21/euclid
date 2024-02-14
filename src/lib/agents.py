@@ -2,6 +2,7 @@ import numpy as np
 import torch
 
 from lib import actions
+from lib.utils import arrayStateToTensor
 
 class BaseAgent:
     """
@@ -46,9 +47,9 @@ def defaultStatesPreprocessor(states: list) -> torch.Tensor:
 class DQNAgent(BaseAgent):
     """
     DQNAgent is a memoryless DQN agent which calculates Q values
-    from the observations and  converts them into the actions using actionSelector
+    from the observations and converts them into the actions using actionSelector
     """
-    def __init__(self, dqnModel, actionSelector, device="cpu", preprocessor=defaultStatesPreprocessor):
+    def __init__(self, dqnModel, actionSelector, device="cpu", preprocessor=arrayStateToTensor):
         """
         Create DQN-based agent
         :param dqnModel: DQN model to use for action calculation
@@ -68,7 +69,7 @@ class DQNAgent(BaseAgent):
             # Create initial empty state
             agentStates = [None] * len(states)
         if self.preprocessor is not None:
-            states = self.preprocessor(states).to(self.device)
+            states = self.preprocessor(states, self.device)
         
         # Calculate Q values - forward pass of the model
         qValues = self.dqnModel(states)

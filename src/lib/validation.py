@@ -3,6 +3,7 @@ import numpy as np
 import torch
 
 from lib import environments
+from lib.utils import dictionaryStateToTensor
 
 METRICS = (
     'episodeReward',
@@ -24,7 +25,7 @@ def validationRun(env, net,
     :param episodes: Number of episodes to run
     :param device: Device to run the model on
     :param epsilon: Epsilon value for exploration
-    :param comission: Comission rate
+    :param comission: Commission rate
     :return: Dictionary of metrics
     """
 
@@ -40,10 +41,10 @@ def validationRun(env, net,
         holdDuration = None
         episodeSteps = 0
 
-        # Runs til episode is done
+        # Runs until episode is done
         while True:
             # Process the observation and get the actions
-            observationVector = torch.tensor([obs]).to(device)
+            observationVector = dictionaryStateToTensor([obs], device)
             outputVector = net(observationVector)
             actionInext = outputVector.max(dim=1)[1].item()
 
@@ -59,7 +60,7 @@ def validationRun(env, net,
                 holdDuration = 0
             # Process Sell action
             elif action == environments.Actions.Close and position is not None:
-                # Price difference minus comission
+                # Price difference minus commission
                 profit = closePrice - position - (closePrice + position) * comission / 100
                 # Convert to percentage
                 profit = 100.0 * profit / position
@@ -82,7 +83,7 @@ def validationRun(env, net,
             # If the episode is done
             if done:
                 if position is not None:
-                    # Price difference minus comission
+                    # Price difference minus commission
                     profit = closePrice - position - (closePrice + position) * comission / 100
                     # Convert to percentage
                     profit = 100.0 * profit / position
