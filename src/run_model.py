@@ -25,6 +25,7 @@ RUNS = 100
 
 def createPlots(data, detData, name, significance=0.05):
     tStat, pValue = ttest_1samp(data, 0)
+    tStat_det, pValue_det = ttest_1samp(detData, 0)
 
     print("----------------P-Mass walk-------------")
     print("Null hypothesis: the mean is equal to zero")
@@ -36,9 +37,9 @@ def createPlots(data, detData, name, significance=0.05):
 
     print("--------------Deterministic-------------")
     print("Null hypothesis: the mean is equal to zero")
-    print("Probability that the null hypothesis is true: %.4f" % pValue)
+    print("Probability that the null hypothesis is true: %.4f" % pValue_det)
     print("Significance level: %.4f" % significance)
-    print("p-value: %.4f, t-statistic: %.4f" % (pValue, tStat))
+    print("p-value: %.4f, t-statistic: %.4f" % (pValue_det, tStat_det))
     print("Mean: %.8f" % np.mean(detData))
     print("Standard deviation: %.4f" % np.std(detData))
 
@@ -52,9 +53,9 @@ def createPlots(data, detData, name, significance=0.05):
         file.write("Standard deviation: %.4f\n" % np.std(data))
         file.write("----------------Deterministic-------------\n")
         file.write("Null hypothesis: the mean is equal to zero\n")
-        file.write("Probability that the null hypothesis is true: %.4f\n" % pValue)
+        file.write("Probability that the null hypothesis is true: %.4f\n" % pValue_det)
         file.write("Significance level: %.4f\n" % significance)
-        file.write("p-value: %.4f, t-statistic: %.4f\n" % (pValue, tStat))
+        file.write("p-value: %.4f, t-statistic: %.4f\n" % (pValue_det, tStat_det))
         file.write("Mean: %.8f\n" % np.mean(detData))
         file.write("Standard deviation: %.4f\n" % np.std(detData))
 
@@ -87,10 +88,9 @@ def createPlots(data, detData, name, significance=0.05):
     plt.title("Normalized performance")
     plt.ylabel("Normalized performance")
     plt.xlabel("Walks")
-    plt.xticks(positions, ["P-Mass Walk", "Deterministic"])
+    plt.xticks(positions, ["P-Mass", "Deterministic"])
     plt.savefig("norm-performance-box-%s.png" % name)
     
-
 def createPlotsFromFile(file, name):
     # Load the results
     with open(file, "r") as file:
@@ -104,6 +104,7 @@ def createPlotsFromFile(file, name):
             detNormPerformance.append(run[6])
 
     # Plot histogram of the normalized performance
+    print(normPerformance)
     createPlots(normPerformance, detNormPerformance, name)
 
 def runTest(args, file):
@@ -145,6 +146,7 @@ def runTest(args, file):
     prices = []
     
     # Run the model
+    # print(detStartPrice)
     while True:
         stepIndex += 1
         closePrice = env._state._currentClose()
@@ -160,33 +162,32 @@ def runTest(args, file):
         walkRewardMultiplier = [closePrice / startPrice if hasPosition else 1.0 for hasPosition, startPrice in zip(walkHasPosition, walkStartPrice)]
 
         # Update the start price if we buy or keep the same price if we have a position
-        walkStartPrice = [startPrice if not hasPosition and actionIndex == Actions.Buy 
-                                     else closePrice 
-                                     for hasPosition, startPrice, actionIndex
-                                     in zip(walkHasPosition, walkStartPrice, walkActionIndex)]
+        walkStartPrice = [startPrice if hasPosition else closePrice for hasPosition, startPrice in zip(walkHasPosition, walkStartPrice)]
+
         # Update the position
-        walkPosition.append([position * rewardMultiplier for position, rewardMultiplier in zip(walkPosition[-1], walkRewardMultiplier)])
-
-        # Update the has position
-        walkPosition[-1] = [position if actionIndex != Actions.Close 
-                                     else position * rewardMultiplier - args.commission 
-                                     for position, actionIndex, rewardMultiplier 
-                                     in zip(walkPosition[-1], walkActionIndex, walkRewardMultiplier)]
-
-        # Update has position
-        walkHasPosition = [True if actionIndex == Actions.Buy and not hasPosition
-                                else False if actionIndex == Actions.Close and hasPosition
-                                else hasPosition
-                                for actionIndex, hasPosition in zip(walkActionIndex, walkHasPosition)]
+        walkPosition.append([position * rewardMultiplier - args.commission if actionIndex == Actions.Close and hasPosition
+                                                                           else position
+                                                                           for position, actionIndex, rewardMultiplier, hasPosition
+                                                                           in zip(walkPosition[-1], walkActionIndex, walkRewardMultiplier, walkHasPosition)])
+        walkHasPosition = [actionIndex == Actions.Buy and not hasPosition
+                           or actionIndex == Actions.Close and hasPosition
+                           for actionIndex, hasPosition in zip(walkActionIndex, walkHasPosition)]
 
         # Same as above but for deterministic for one run
         detOutput = net(dictionaryStateToTensor([obs]))
         detActionIndex = Actions(torch.argmax(torch.nn.functional.softmax(detOutput, dim=1)).item())
         detRewardMultiplier = closePrice / detStartPrice if detHasPosition else 1.0
-        detStartPrice = detStartPrice if not detHasPosition and detActionIndex == Actions.Buy else closePrice
-        detPosition.append(detPosition[-1] * detRewardMultiplier)
-        detPosition[-1] = detPosition[-1] if detActionIndex != Actions.Close else detPosition[-1] * detRewardMultiplier - args.commission
-        detHasPosition = True if detActionIndex == Actions.Buy and not detHasPosition else False if detActionIndex == Actions.Close and detHasPosition else detHasPosition
+
+        # # print if we sold
+        # if detActionIndex == Actions.Close and detHasPosition:
+        #     print("Sold at %.14f, step %d, multiplier %.14f, openPrice %.14f" % (closePrice, stepIndex, detRewardMultiplier, detStartPrice))
+
+        detStartPrice = detStartPrice if detHasPosition else closePrice
+
+        # Update position only if a buy or sell action is taken
+        detPosition.append(detPosition[-1] * detRewardMultiplier - args.commission if detActionIndex == Actions.Close and detHasPosition else detPosition[-1])
+        # Update position flag
+        detHasPosition = detActionIndex == Actions.Buy or (detActionIndex == Actions.Close and detHasPosition)
 
         # Update the prices
         prices.append(closePrice)
@@ -213,6 +214,7 @@ def runTest(args, file):
     # plt.plot(meanReward, label="Mean Reward")
     # plt.plot(detPosition, label="Deterministic Run")
     # plt.fill_between(range(len(meanReward)), lowerCILimit, upperCILimit, color='gray', alpha=0.5)
+    # plt.title(file)
     # plt.legend()
     # plt.savefig("price-mean-reward-%s.png" % args.name)
 
