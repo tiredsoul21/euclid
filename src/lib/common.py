@@ -164,7 +164,7 @@ def setupIgnite(engine: Engine,
 
     # Create the tensorboard logger
     now = datetime.now().isoformat(timespec='minutes')
-    logdir = f"runs/{now}-{runName}"
+    logdir = f"runs/{runName}-{now}"
     tb = tb_logger.TensorboardLogger(log_dir=logdir)
 
     # Attach the running average

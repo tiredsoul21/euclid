@@ -1,12 +1,13 @@
-import gym
 import random
 import collections
+from collections import namedtuple, deque
+import math
 
 import numpy as np
-
-from collections import namedtuple, deque
+import gym
 
 from .agents import BaseAgent
+from .utils import MinSegmentTree, SumSegmentTree
 
 # Element containing a state, chosen action, reward, and whether the episode is done
 Experience = namedtuple('Experience', ['state', 'action', 'reward', 'done'])
@@ -307,3 +308,98 @@ class ExperienceReplayBuffer:
         for _ in range(samples):
             entry = next(self.experienceSourceIter)
             self._add(entry)
+
+class PrioritizedReplayBuffer(ExperienceReplayBuffer):
+    @property
+    def _maxPriority(self):
+        return 1.0
+
+    def __init__(self,
+                 experienceSource: ExperienceSource,
+                 bufferSize: int,
+                 alpha: float = 0.6):
+        """
+        Create prioritized replay buffer
+        :param experienceSource: source to generate experience to store
+        :param bufferSize: maximum number of transitions to store
+        :param alpha: how much prioritization is used, 0 - no prioritization, 1 - full prioritization
+        """
+        super(PrioritizedReplayBuffer, self).__init__(experienceSource, bufferSize)
+
+        # Check input parameters
+        assert isinstance(experienceSource, ExperienceSource)
+        assert isinstance(bufferSize, int) and bufferSize > 0
+        assert isinstance(alpha, float) and alpha > 0
+
+        # Initialize variables
+        self._alpha = alpha
+        capacity = 2 ** math.ceil(math.log2(bufferSize))
+        self._sumSegTree = SumSegmentTree(capacity)
+        self._minSegTree = MinSegmentTree(capacity)
+
+    def _add(self, *args, **kwargs):
+        super()._add(*args, **kwargs)
+
+        idx = self.pos
+        priority = self._maxPriority ** self._alpha
+        
+        # Add the priority to the sum and min segment trees
+        self._sumSegTree[idx] = priority
+        self._minSegTree[idx] = priority
+
+    def _sampleProportional(self, batchSize: int):
+        """
+        Generates random masses, scales them based on the sum of priorities.
+        Uses these scaled masses to sample indices from the sum tree.
+        This sampling process gives higher probabilities to transitions with higher priorities.
+        :param batchSize: size of the batch
+        :return: list of indices
+        """
+        mass = np.random.random(batchSize) * self._sumSegTree.sum(0, len(self) - 1)
+        idx = np.array([self._sumSegTree.findPrefixsumIdx(m) for m in mass])
+        return idx.tolist()
+
+    def sample(self, batchSize: int, beta: float = 0.4):
+        """
+        Sample a batch of experiences
+        :param batchSize: size of the batch
+        :param beta: beta parameter for prioritized replay buffer
+        :return: list of experiences
+        """
+
+        # Check input parameters
+        assert isinstance(beta, float) and beta > 0
+        assert isinstance(batchSize, int) and 0 < batchSize <= len(self)
+
+        # Sample indices
+        indices = self._sampleProportional(batchSize)
+
+        # Compute total priority and minimum priority
+        totalPriority = self._sumSegTree.sum()
+        pMin = self._minSegTree.min() / totalPriority
+
+        # Calculate weights
+        maxWeight = (pMin * len(self)) ** (-beta)
+        weights = ((self._sumSegTree[idx] / totalPriority * len(self)) ** (-beta) / maxWeight for idx in indices)
+
+        # Get the samples
+        samples = [self.buffer[idx] for idx in indices]
+        return samples #, indices, weights
+
+    def updatePriorities(self, indices, priorities):
+        """
+        Update priorities of sampled transitions
+        :param indices: list of sample indices
+        :param priorities: list of sample priorities
+        """
+        # Check input parameters
+        assert len(indices) == len(priorities)
+        assert all(priority > 0 for priority in priorities)
+        assert all(0 <= idx < len(self) for idx in indices)
+
+        # Vectorized priority update
+        idx = np.arange(len(self))
+        self._sumSegTree[idx] = np.where(np.isin(idx, indices), priorities ** self._alpha, self._sumSegTree[idx])
+        self._minSegTree[idx] = np.where(np.isin(idx, indices), priorities ** self._alpha, self._minSegTree[idx])
+        self._maxPriority = max(self._maxPriority, max(priorities))
+

@@ -70,7 +70,7 @@ if __name__ == "__main__":
     device = torch.device("cuda" if args.cuda else "cpu")
 
     # Create output directory
-    savesPath = SAVES_DIR / f"08-{args.run}"
+    savesPath = SAVES_DIR / f"{args.run}"
     savesPath.mkdir(parents=True, exist_ok=True)
 
     # Set data paths
@@ -122,7 +122,7 @@ if __name__ == "__main__":
 
     # Create the experience source
     expSource = experiences.ExperienceSourceFirstLast(env, agent, GAMMA, stepsCount=REWARD_STEPS)
-    buffer = experiences.ExperienceReplayBuffer(expSource, REPLAY_SIZE)
+    buffer = experiences.PrioritizedReplayBuffer(expSource, REPLAY_SIZE)
 
     # Create the optimizer
     optimizer = optim.Adam(net.parameters(), lr=LEARNING_RATE)
@@ -167,7 +167,7 @@ if __name__ == "__main__":
     engine = Engine(processBatch)
 
     # Attach the tensorboard logger
-    tb = common.setupIgnite(engine, expSource, f"conv-{args.run}", extraMetrics=('MeanValue',))
+    tb = common.setupIgnite(engine, expSource, f"{args.run}", extraMetrics=('MeanValue',))
 
     # Set the TargetNet Sync engine
     @engine.on(Events.ITERATION_COMPLETED)
