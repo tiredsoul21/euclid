@@ -167,7 +167,6 @@ class EpisodeFPSHandler:
         engine.state.metrics[self.TIME_PASSED_METRIC] = time.time() - self._startedTimeStamp
         self._timer.reset()
 
-
 class PeriodicEvents:
     """
     The same as CustomPeriodicEvent from ignite.contrib, but use true amount of iterations,
