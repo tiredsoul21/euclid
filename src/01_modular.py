@@ -110,7 +110,7 @@ if __name__ == "__main__":
     envVal = environments.StocksEnv.fromDirectory(valPath, barCount=BAR_COUNT)
 
     # Create the networks
-    net = models.DQNConv1D(env.observation_space.shape, env.action_space.n).to(device)
+    net = models.DQNConv2D(env.observation_space.shape, env.action_space.n).to(device)
     targetNet = models.TargetNet(net)
 
     # Create the action selector
@@ -122,7 +122,7 @@ if __name__ == "__main__":
 
     # Create the experience source
     expSource = experiences.ExperienceSourceFirstLast(env, agent, GAMMA, stepsCount=REWARD_STEPS)
-    buffer = experiences.PrioritizedReplayBuffer(expSource, REPLAY_SIZE)
+    buffer = experiences.ExperienceReplayBuffer(expSource, REPLAY_SIZE)
 
     # Create the optimizer
     optimizer = optim.Adam(net.parameters(), lr=LEARNING_RATE)

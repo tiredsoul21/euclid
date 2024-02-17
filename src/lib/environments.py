@@ -198,9 +198,7 @@ class StockState:
         """
         Return shape of the state
         """
-        size = 5
-        if self.volumes:  # add volumes
-            size += 1
+        size = 3
         return (size, self.barCount)
 
     def encode(self):
