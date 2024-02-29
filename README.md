@@ -1,34 +1,47 @@
 # euclid
 
-## Setup
+## Stock DDQN
+### Setup
 ```
 # Code snippets
 sudo apt-get install python3-venv
 python3 -m venv ml-env
 source ml-env/bin/activate
-pip3 install numpy==1.26.3
-pip3 install gym==0.26.2
-pip3 install torch==2.1.2
-pip3 install pytorch-ignite==0.4.13
-pip3 install tensorboard==2.15.1
-pip3 install matplotlib==3.8.2
-pip3 install scipy==1.12.0
+pip3 install numpy==1.26.3            # For data management
+pip3 install gym==0.26.2              # Utility to build / train RL 
+pip3 install torch==2.1.2             # Core models / networks
+pip3 install pytorch-ignite==0.4.13   # Engines
+pip3 install tensorboard==2.15.1      # Results display
+pip3 install matplotlib==3.8.2        # For plotting
+pip3 install scipy==1.12.0            # For statistics
 ```
 
-## Monitor
+### Monitor
 To see output visualizations:
 `tensorboard --logdir runs` 
 
-## Dataset
+### Dataset
 https://www.kaggle.com/datasets/tanavbajaj/yahoo-finance-all-stocks-dataset-daily-update
 
-## Execution
+### Execution
 ```
-python3 src/00_example.py -p /home/derrick/data/daily_price_data -r test --cuda
-python3 src/run_model.py -d /home/derrick/data/daily_price_data/test/FOX.csv -m valReward-22.174.data -n test1
+# Training:
+python3 src/trainStockModel.py -p /home/derrick/data/daily_price_data -r test --cuda
+
+# Short training runs:
+python3 src/trainStockModel.py -p /home/derrick/data/daily_price_data/other -r test --cuda
+
+# Batch testing
+# python3 src/testStockModel.py -d /home/derrick/data/daily_price_data/test/ -m valReward-22.174.data -n test-01
+
+# Short testing run
+# python3 src/testStockModel.py -d /home/derrick/data/daily_price_data/test/FOX.csv -m valReward-22.174.data -n test-01
+
+# Create plots
+# python3 src/testStockModel.py -d results-test-01.json -o "plot" -n test1
 ```
 
-## Runs
+### Runs
 ```
   test-00 :: EPS_STEPS 1M || BATCH_SIZE 32  || 50 Bars
   test-01 :: EPS_STEPS 2M || BATCH_SIZE 64  || 50 Bars
@@ -39,4 +52,8 @@ python3 src/run_model.py -d /home/derrick/data/daily_price_data/test/FOX.csv -m 
   test-05 :: EPS_STEPS 1M || BATCH_SIZE 64  || 25 Bars 
 * test-06 :: EPS_STEPS 1M || BATCH_SIZE 64  || 50 Bars -- Optimizations
 ------------------------------------------------------------------------------------
+  test-07 :: Test against modularized methods - prep for additional feature extraction
+  test-08 :: Prioritized Buffer test.  Did not seem impactful yet
+* test-09 :: Test with 2D CNN for 3xN price data
+  test-10 :: Test with long run and LEARNING_RATE 0.0001 --> 0.001
 ```
