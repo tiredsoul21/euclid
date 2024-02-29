@@ -7,6 +7,7 @@ from gym.envs.registration import EnvSpec
 import numpy as np
 
 from lib import data
+import lib.stockTools as stockTools
 
 # Default values
 DEFAULT_BARS_COUNT = 10
@@ -65,25 +66,29 @@ class StocksEnv(gym.Env):
                                  volumes=volumes)
         self.observation_space = gym.spaces.Box(low=-np.inf,
                                                 high=np.inf,
-                                                shape=self._state.shape,
+                                                shape=(3, barCount),
                                                 dtype=np.float32)
         self.randomOffset = randomOffset
+
+        self.movingAverageFlag = False
+        self.movingAverageWindow = 10
+        self.movingAverage = {}
 
     def reset(self):
         # make selection of the instrument and price data
         self._instrument = np.random.choice(list(self.prices.keys()))
         prices = self.prices[self._instrument]
+        technicals = {}
 
         # set offset if randomOffset is True
         bars = self._state.barCount
-        if self.randomOffset:
-            # offset keeps at least bars distance from the beginning and from the end
-            offset = np.random.choice(prices.high.shape[0] - 2 * bars) + bars
-        else:
-            offset = bars
+        offset = np.random.choice(prices.high.shape[0] - 2 * bars) + bars if self.randomOffset else bars
+
+        if self.movingAverageFlag:
+            technicals['movingAverage'] = self.movingAverage[self._instrument]
 
         # reset state and return observation
-        self._state.reset(prices, offset)
+        self._state.reset(prices, technicals, offset)
         return self._state.encode()
 
     def step(self, actionIdx: int):
@@ -136,6 +141,12 @@ class StocksEnv(gym.Env):
         # Create second seed in range [0, 2**31)
         seed2 = hash(seed1 + 1) % 2 ** 31
         return [seed1, seed2]
+    
+    def stateShape(self):
+        """
+        Return shape of the state
+        """
+        return self._state.shape
 
     @classmethod
     def fromDirectory(cls, directory, **kwargs):
@@ -145,11 +156,35 @@ class StocksEnv(gym.Env):
         :param kwargs: arguments for the environment
         :return: environment
         """
+        loadRelativeKwargs = {key: kwargs.pop(key) for key in ['sep', 'fixOpenPrice'] if key in kwargs}
         prices = {
-            file: data.loadRelative(file)
+            file: data.loadRelative(file, **loadRelativeKwargs)
             for file in data.findFiles(directory)
         }
         return StocksEnv(prices, **kwargs)
+
+    def useMovingAverage(self, toggle: bool = True, window: int = 10):
+        """
+        Moving average of the close price
+        :param toggle: (bool) if True, return moving average
+        :param window: (int) window size
+        """
+        # Check input parameters
+        assert isinstance(toggle, bool)
+        assert isinstance(window, int) and window > 0
+
+        self.movingAverageFlag = toggle
+        self.movingAverageWindow = window
+
+        if toggle:
+            # Create a moving average dictionary
+            self.movingAverage = {}
+            for instrument, prices in self.prices.items():
+                print(f'Calculating moving average for {instrument}')
+                self.movingAverage[instrument] = stockTools.movingAverage(prices, window)
+        else:
+            self.movingAverage = None
+        self.reset()
 
 class StockState:
     def __init__(self,
@@ -174,8 +209,12 @@ class StockState:
         self.resetOnClose = resetOnClose
         self.rewardOnClose = rewardOnClose
         self.volumes = volumes
+        self.technicals = {}
 
-    def reset(self, prices: data.Prices, offset: int):
+    def reset(self,
+              prices: data.Prices,
+              technicals: dict,
+              offset: int):
         """
         Reset state to the beginning of the price data
         :param prices: price data
@@ -192,38 +231,38 @@ class StockState:
         self.openPrice = 0.0
         self.prices = prices
         self.offset = offset
+        self.technicals = technicals
 
     @property
     def shape(self):
         """
         Return shape of the state
         """
-        size = 3
-        return (size, self.barCount)
+        shapes = {}
+        shapes['priceData'] = (3, self.barCount)
+        shapes['volumeData'] = (self.barCount,) if self.volumes else None
+        shapes['movingAverage'] = (self.barCount,) if 'movingAverage' in self.technicals else None
+        return shapes
 
     def encode(self):
         """
         Encode current state a dictionary of numpy arrays
         """
+        dataRange = range(self.offset - (self.barCount - 1), self.offset + 1)
 
         # Create dictionary
         encodedData = {
             'priceData': np.zeros(shape=(3, self.barCount), dtype=np.float32),
-            'volumeData': np.zeros(shape=(1, self.barCount), dtype=np.float32) if self.volumes else np.array(0, dtype=np.float32),
+            'volumeData': self.prices.volume[dataRange] if self.volumes else np.array(0, dtype=np.float32),
+            'movingAverage': self.technicals['movingAverage'][dataRange] if 'movingAverage' in self.technicals else np.array(0, dtype=np.float32),
             'hasPosition': np.array([0.0], dtype=np.float32),
             'position': np.array([0.0], dtype=np.float32)
         }
 
         # Set values
-        start = self.offset - (self.barCount - 1)
-        stop = self.offset + 1
-        encodedData['priceData'][0] = self.prices.high[start:stop]
-        encodedData['priceData'][1] = self.prices.low[start:stop]
-        encodedData['priceData'][2] = self.prices.close[start:stop]
-
-        # Set volumes if needed
-        if self.volumes:
-            encodedData['volumeData'][0] = self.prices.volume[start:stop]
+        encodedData['priceData'][0] = self.prices.high[dataRange]
+        encodedData['priceData'][1] = self.prices.low[dataRange]
+        encodedData['priceData'][2] = self.prices.close[dataRange]
 
         # Set position if needed
         if self.havePosition:
@@ -281,7 +320,15 @@ class StockState:
         previousClose = close
         close = self._currentClose()
 
+        preReward = reward
         if self.havePosition and not self.rewardOnClose:
             reward += 100.0 * (close / previousClose - 1.0)
+
+        # Close the position if the last bar is reached
+        if done and self.havePosition:
+            reward -= self.commission
+            reward += 100.0 * (close / self.openPrice - 1.0)
+            self.havePosition = False
+            self.openPrice = 0.0
 
         return reward, done

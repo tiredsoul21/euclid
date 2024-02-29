@@ -103,10 +103,10 @@ def findFiles(path: pathlib.Path) -> list:
     # Search for files and return
     return [path for path in glob.glob(os.path.join(path, '*.csv'))]
 
-def loadRelative(csvFile: str) -> Prices:
+def loadRelative(csvFile: str, sep: str =',', fixOpenPrice: bool = False) -> Prices:
     """
     Load relative prices from csv file
     :param csvFile: csv file to load
     :return: tuple with relative prices
     """
-    return relativePrices(readCSV(csvFile))
+    return relativePrices(readCSV(csvFile, sep, fixOpenPrice))
