@@ -1,6 +1,6 @@
 # euclid
 
-## Stock DDQN
+## Stock Model - DDQN
 ### Setup
 ```
 # Code snippets
@@ -56,4 +56,14 @@ python3 src/trainStockModel.py -p /home/derrick/data/daily_price_data/other -r t
   test-08 :: Prioritized Buffer test.  Did not seem impactful yet
 * test-09 :: Test with 2D CNN for 3xN price data
   test-10 :: Test with long run and LEARNING_RATE 0.0001 --> 0.001
+```
+
+## Code Model
+### Setup
+```
+# Code snippets
+sudo apt-get install python3-venv
+python3 -m venv ml-env
+source ml-env/bin/activate
+pip3 install datasets==2.17.1         # For dataset managment
 ```

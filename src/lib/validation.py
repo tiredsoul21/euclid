@@ -1,8 +1,7 @@
+""" Defines the ValidationRun methods """
 import numpy as np
 
-import torch
-
-from lib import environments
+from lib.environments import StockActions
 from lib.utils import dictionaryStateToTensor
 
 METRICS = (
@@ -33,7 +32,7 @@ def validationRun(env, net,
     stats = { metric: [] for metric in METRICS }
 
     # Run the episodes
-    for episode in range(episodes):
+    for _ in range(episodes):
         # Initialize the variables
         obs = env.reset()
         total_reward = 0.0
@@ -51,15 +50,15 @@ def validationRun(env, net,
             # If we allow exploration
             if np.random.random() < epsilon:
                 actionInext = env.action_space.sample()
-            action = environments.Actions(actionInext)
+            action = StockActions(actionInext)
 
             # Process Buy action
-            closePrice = env._state._currentClose()
-            if action == environments.Actions.Buy and position is None:
+            closePrice = env._state._current_close()
+            if action == StockActions.BUY and position is None:
                 position = closePrice
                 holdDuration = 0
             # Process Sell action
-            elif action == environments.Actions.Close and position is not None:
+            elif action == StockActions.SELL and position is not None:
                 # Price difference minus commission
                 profit = closePrice - position - (closePrice + position) * comission / 100
                 # Convert to percentage

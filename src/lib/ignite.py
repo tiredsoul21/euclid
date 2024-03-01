@@ -1,4 +1,4 @@
-import enum
+"""Set of custom handlers for Ignite engine"""
 import time
 from typing import Optional
 from ignite.engine import Engine, State

@@ -2,7 +2,7 @@ import numpy as np
 
 from .data import Prices
 
-def movingAverage(prices: Prices, window: int = 10):
+def moving_avg(prices: Prices, window: int = 10):
     """
     Moving average of the close price
     - Complexity O(n)
@@ -15,12 +15,12 @@ def movingAverage(prices: Prices, window: int = 10):
 
     # Calculate moving average
     totalSize = prices.close.size
-    movingAverage = np.zeros(totalSize - window + 1)
+    moving_avgerage = np.zeros(totalSize - window + 1)
     windowSum = np.sum(prices.close[:window])
 
     #Start from window-th element
     for i in range(window, totalSize):
-        movingAverage[i - window] = windowSum / window
+        moving_avgerage[i - window] = windowSum / window
         windowSum += prices.close[i] - prices.close[i - window]
     
-    return movingAverage
+    return moving_avgerage

@@ -7,7 +7,7 @@ from scipy.stats import ttest_1samp
 
 from lib import data
 from lib import models
-from lib.environments import StocksEnv, Actions
+from lib.environments import StocksEnv, StockActions as Actions
 from lib.utils import dictionaryStateToTensor
 
 import torch
@@ -115,15 +115,15 @@ def runTest(args, file):
     # Load our data into the environment
     prices = data.loadRelative(file)
     env = StocksEnv({"TEST": prices},
-                    barCount=args.bars,
-                    resetOnClose=False,
+                    bar_count=args.bars,
+                    reset_on_close=False,
                     commission=args.commission,
-                    randomOffset=False,
-                    rewardOnClose=False,
+                    random_offset=False,
+                    reward_on_close=False,
                     volumes=False)
 
     # Load our model
-    net = models.DQNConv2D(env.stateShape(), env.action_space.n)
+    net = models.DQNConv2D(env.state_shape(), env.action_space.n)
     net.load_state_dict(torch.load(args.model, map_location=lambda storage, loc: storage))
 
     walkAllRewards = []
@@ -135,7 +135,7 @@ def runTest(args, file):
 
     # Initialize start prices
     detHasPosition = False
-    detStartPrice = env._state._currentClose()
+    detStartPrice = env._state._current_close()
     detPosition = [detStartPrice]
     walkHasPosition = [False for _ in range(RUNS)]
     walkStartPrice = [detStartPrice for _ in range(RUNS)]
@@ -149,7 +149,7 @@ def runTest(args, file):
     # print(detStartPrice)
     while True:
         stepIndex += 1
-        closePrice = env._state._currentClose()
+        closePrice = env._state._current_close()
 
         # Get the actions
         walkOutput = net(obsWalks)
@@ -165,12 +165,12 @@ def runTest(args, file):
         walkStartPrice = [startPrice if hasPosition else closePrice for hasPosition, startPrice in zip(walkHasPosition, walkStartPrice)]
 
         # Update the position
-        walkPosition.append([startPrice * rewardMultiplier - args.commission if actionIndex == Actions.Close and hasPosition
+        walkPosition.append([startPrice * rewardMultiplier - args.commission if actionIndex == Actions.SELL and hasPosition
                                                                            else position
                                                                            for startPrice, position, actionIndex, rewardMultiplier, hasPosition
                                                                            in zip(walkStartPrice, walkPosition[-1], walkActionIndex, walkRewardMultiplier, walkHasPosition)])
-        walkHasPosition = [actionIndex == Actions.Buy and not hasPosition
-                           or actionIndex == Actions.Close and hasPosition
+        walkHasPosition = [actionIndex == Actions.BUY and not hasPosition
+                           or actionIndex == Actions.SELL and hasPosition
                            for actionIndex, hasPosition in zip(walkActionIndex, walkHasPosition)]
 
         # Same as above but for deterministic for one run
@@ -179,15 +179,15 @@ def runTest(args, file):
         detRewardMultiplier = closePrice / detStartPrice if detHasPosition else 1.0
 
         # # print if we sold
-        # if detActionIndex == Actions.Close and detHasPosition:
+        # if detActionIndex == Actions.SELL and detHasPosition:
         #     print("Sold at %.14f, step %d, multiplier %.14f, openPrice %.14f" % (closePrice, stepIndex, detRewardMultiplier, detStartPrice))
 
         detStartPrice = detStartPrice if detHasPosition else closePrice
 
         # Update position only if a buy or sell action is taken
-        detPosition.append(detStartPrice * detRewardMultiplier - args.commission if detActionIndex == Actions.Close and detHasPosition else detPosition[-1])
+        detPosition.append(detStartPrice * detRewardMultiplier - args.commission if detActionIndex == Actions.SELL and detHasPosition else detPosition[-1])
         # Update position flag
-        detHasPosition = detActionIndex == Actions.Buy or (detActionIndex == Actions.Close and detHasPosition)
+        detHasPosition = detActionIndex == Actions.BUY or (detActionIndex == Actions.SELL and detHasPosition)
 
         # Update the prices
         prices.append(closePrice)
