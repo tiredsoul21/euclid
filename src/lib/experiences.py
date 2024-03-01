@@ -69,7 +69,7 @@ class ExperienceSource:
         """
 
         # Initialize variables
-        states, agentStates, histories, currentReward, currentSteps = [], [], [], [], []
+        states, agent_states, histories, currentReward, currentSteps = [], [], [], [], []
         envLengths = []
 
         # Loop through the environments
@@ -85,7 +85,7 @@ class ExperienceSource:
             histories = [deque(maxlen=self.stepsCount) for _ in range(obsLengths)]
             currentReward.extend([0.0] * obsLengths)
             currentSteps.extend([0] * obsLengths)
-            agentStates.extend([self.agent.initialState() for _ in range(obsLengths)])
+            agent_states.extend([self.agent.initial_state() for _ in range(obsLengths)])
 
         while True:
             # Initialize variables
@@ -99,13 +99,13 @@ class ExperienceSource:
             # Check if statesInput is empty
             if statesInput:
                 # Get actions and new agent states
-                statesActions, nextAgentStates = self.agent(statesInput, agentStates)
+                statesActions, nextAgentStates = self.agent(statesInput, agent_states)
                 
                 # Store the actions and new agent states
                 for idx, action in enumerate(statesActions):
                     stateIndex = statesIndices[idx]
                     actions[stateIndex] = action
-                    agentStates[stateIndex] = nextAgentStates[idx]
+                    agent_states[stateIndex] = nextAgentStates[idx]
             
             # Partition the actions by environment
             groupedActions = _partition_list(actions, envLengths)
@@ -161,7 +161,7 @@ class ExperienceSource:
 
                         # Reset everything
                         states[idx] = env.reset() if not self.vectorized else None
-                        agentStates[idx] = self.agent.initialState()
+                        agent_states[idx] = self.agent.initial_state()
                         history.clear()
 
                 # Update the global offset

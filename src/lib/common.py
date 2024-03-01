@@ -1,19 +1,19 @@
+""" Common functions for the training """
+from typing import Iterable
+from datetime import datetime, timedelta
+import warnings
 import numpy as np
 
 import torch
-import torch.nn as nn
-
-import warnings
-from typing import Iterable
-from datetime import datetime, timedelta
-
-from lib import experiences
-from lib import ignite as local_ignite
-from lib.utils import dictionaryStateToTensor
+from torch import nn
 
 from ignite.engine import Engine
 from ignite.metrics import RunningAverage
 from ignite.contrib.handlers import tensorboard_logger as tb_logger
+
+from lib import experiences
+from lib import ignite as local_ignite
+from lib.utils import dictionaryStateToTensor
 
 @torch.no_grad()
 def calculateStatesValues(states, net, device: str = "cpu"):

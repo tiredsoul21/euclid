@@ -1,22 +1,20 @@
-import numpy as np
+""" Action Mechanics """
 from typing import Union
+import numpy as np
 
 class ActionSelector:
-    """
-    Abstract class which converts scores to the actions
-    """
+    """ Abstract class which converts scores to the actions """
     def __call__(self, scores):
         raise NotImplementedError
 
 class ArgmaxActionSelector(ActionSelector):
-    """
-    Selects actions using argmax
-    """
+    """ Selects actions using argmax """
     def __call__(self, scores: np.ndarray):
         assert isinstance(scores, np.ndarray)
         return np.argmax(scores, axis=1)
 
 class EpsilonGreedyActionSelector(ActionSelector):
+    """ Selects actions using epsilon-greedy policy """
     def __init__(self,
                  epsilon: float = 0.05,
                  selector=None):
@@ -33,19 +31,17 @@ class EpsilonGreedyActionSelector(ActionSelector):
         assert isinstance(scores, np.ndarray)
 
         # Get batch size and number of actions
-        batchSize, actionCount = scores.shape
+        batch_size, action_count = scores.shape
 
         # Select and return actions
         actions = self.selector(scores)
-        mask = np.random.random(size=batchSize) < self.epsilon
-        randomActions = np.random.choice(actionCount, size=sum(mask))
-        actions[mask] = randomActions
+        mask = np.random.random(size=batch_size) < self.epsilon
+        random_actions = np.random.choice(action_count, size=sum(mask))
+        actions[mask] = random_actions
         return actions
     
 class EpsilonTracker:
-    """
-    Updates epsilon according to linear schedule
-    """
+    """ Updates epsilon according to linear schedule """
     def __init__(self,
                  selector: EpsilonGreedyActionSelector,
                  eps_start: Union[int, float],
@@ -76,14 +72,3 @@ class EpsilonTracker:
         # Set epsilon value to linear decay or final epsilon (max)
         eps = self.eps_start - frame / self.eps_frames
         self.selector.epsilon = max(self.eps_final, eps)
-
-# class ProbabilityActionSelector(ActionSelector):
-#     """
-#     Converts probabilities of actions into action by sampling them
-#     """
-#     def __call__(self, probs):
-#         assert isinstance(probs, np.ndarray)
-#         actions = []
-#         for prob in probs:
-#             actions.append(np.random.choice(len(prob), p=prob))
-#         return np.array(actions)
