@@ -52,7 +52,7 @@ REPLAY_SIZE = 500000
 REPLAY_INITIAL = 10000
 
 # How often to run validation and sync the target network
-VALIDATION_INTERVAL = 10000
+VALIDATION_INTERVAL = 1000
 TARGETNET_SYNC_INTERNVAL = 1000
 
 # Number of states to evaluate when syncing the target network
@@ -74,12 +74,12 @@ if __name__ == "__main__":
     savesPath.mkdir(parents=True, exist_ok=True)
 
     # Set data paths
-    dataPath = pathlib.Path(args.path)
-    dataFolder = dataPath
+    data_path = pathlib.Path(args.path)
+    dataFolder = data_path
 
-    # If dataPath is a file, use fetch containing directory
-    if dataPath.is_file():
-        dataFolder = dataPath.parent
+    # If data_path is a file, use fetch containing directory
+    if data_path.is_file():
+        dataFolder = data_path.parent
 
     # Set validation path
     if args.val is None:
@@ -94,13 +94,13 @@ if __name__ == "__main__":
         testPath = pathlib.Path(args.test)
 
     # Create Environment
-    if dataPath.is_file():
+    if data_path.is_file():
         # Import data from file to dictionary
-        index = dataPath.stem
-        priceData = {index: data.read_csv(str(dataPath, sep=',', fix_open_price = True)) }
-        env = environments.StocksEnv(priceData, bar_count=BAR_COUNT)
-    elif dataPath.is_dir():
-        env = environments.StocksEnv.from_directory(dataPath, bar_count=BAR_COUNT, sep=',',
+        index = data_path.stem
+        price_data = {index: data.read_csv(str(data_path), sep=',', fix_open_price = True) }
+        env = environments.StocksEnv(price_data, bar_count=BAR_COUNT)
+    elif data_path.is_dir():
+        env = environments.StocksEnv.from_directory(data_path, bar_count=BAR_COUNT, sep=',',
                                                    fix_open_price = True)
     else:
         raise RuntimeError("No data to train on")
@@ -118,7 +118,7 @@ if __name__ == "__main__":
 
     # Create the action selector
     selector = actions.EpsilonGreedyActionSelector(EPS_START)
-    epsilonTracker = actions.EpsilonTracker(selector, EPS_START, EPS_FINAL, EPS_STEPS)
+    epsilon_tracker = actions.EpsilonTracker(selector, EPS_START, EPS_FINAL, EPS_STEPS)
 
     # Create the agent
     agent = agents.DQNAgent(net, selector, device=device, preprocessor=dict_state_to_tensor)
@@ -142,7 +142,8 @@ if __name__ == "__main__":
         optimizer.zero_grad()
 
         # Calculate the loss
-        validation_loss = common.calculate_loss(batch, net, target_net.target_model, gamma=GAMMA ** REWARD_STEPS, device=device)
+        validation_loss = common.calculate_loss(batch, net, target_net.target_model, 
+                                                gamma=GAMMA ** REWARD_STEPS, device=device)
 
         # Backpropagate the loss
         validation_loss.backward()
@@ -151,7 +152,7 @@ if __name__ == "__main__":
         optimizer.step()
 
         # Update the epsilon
-        epsilonTracker.frame(engine.state.iteration)
+        epsilon_tracker.frame(engine.state.iteration)
 
         # If eval_states is not set...
         if getattr(engine.state, "eval_states", None) is None:

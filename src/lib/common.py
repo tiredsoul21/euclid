@@ -59,14 +59,14 @@ def unpack_batch(batch):
         states.append(state)
         actions.append(exp.action)
         rewards.append(exp.reward)
-        dones.append(exp.lastState is None)
+        dones.append(exp.last_state is None)
 
         # Account for the last state
-        if exp.lastState is None:
+        if exp.last_state is None:
             # Will be masked anyway
             last_states.append(state)
         else:
-            last_states.append(exp.lastState)
+            last_states.append(exp.last_state)
     # Return the array of states, actions, rewards, dones, and last states
     return states, np.array(actions), np.array(rewards, dtype=np.float32), \
            np.array(dones, dtype=np.uint8), last_states
