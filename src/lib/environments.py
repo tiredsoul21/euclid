@@ -7,7 +7,7 @@ from gym.utils import seeding
 import numpy as np
 
 from lib import data
-from lib import stockTools
+from lib import math_tools
 
 # Default values
 DEFAULT_BARS_COUNT = 10
@@ -78,7 +78,12 @@ class StocksEnv(gym.Env):
 
         self._instrument = None
 
-    def reset(self):
+    def reset(self, **kwargs):
+        """
+        Reset the environment.
+        """
+        # Call the parent class reset method
+        super().reset(**kwargs)
         # make selection of the instrument and price data
         self._instrument = np.random.choice(list(self.prices.keys()))
         prices = self.prices[self._instrument]
@@ -185,10 +190,16 @@ class StocksEnv(gym.Env):
             self.moving_avg = {}
             for instrument, prices in self.prices.items():
                 print(f'Calculating moving average for {instrument}')
-                self.moving_avg[instrument] = stockTools.moving_avg(prices, window)
+                self.moving_avg[instrument] = math_tools.moving_avg(prices, window)
         else:
             self.moving_avg = None
         self.reset()
+
+    def get_close(self):
+        """
+        return immutable close price
+        """
+        return self._state.get_close()
 
 class StockState:
     """ State of the stock environment """
@@ -345,3 +356,7 @@ class StockState:
             self.open_price = 0.0
 
         return reward, done
+    
+    def get_close(self):
+        """ Get the close price """
+        return self._current_close()

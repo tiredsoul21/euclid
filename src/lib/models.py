@@ -113,7 +113,7 @@ class DQNConv2D(nn.Module):
         conv_out = conv_out.view(x['priceData'].size()[0], -1)
 
         # Get/Append hasPosition and position
-        conv_out = torch.cat([conv_out, x['hasPosition'], x['position']], dim=1)        
+        conv_out = torch.cat([conv_out, x['hasPosition'], x['position']], dim=1)
 
         val = self.fc_value(conv_out)
         adv = self.fc_advantage(conv_out)

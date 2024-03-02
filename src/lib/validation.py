@@ -6,13 +6,13 @@ from lib.utils import dict_state_to_tensor
 
 METRICS = (
     'episodeReward',
-    'episodeSteps',
+    'episode_steps',
     'orderProfits',
     'orderSteps',
 )
 
 
-def validationRun(env, net,
+def validation_run(env, net,
                   episodes: int = 100,
                   device: str = "cpu",
                   epsilon: float = 0.02,
@@ -37,64 +37,64 @@ def validationRun(env, net,
         obs = env.reset()
         total_reward = 0.0
         position = None
-        holdDuration = None
-        episodeSteps = 0
+        hold_duration = None
+        episode_steps = 0
 
         # Runs until episode is done
         while True:
             # Process the observation and get the actions
-            observationVector = dict_state_to_tensor([obs], device)
-            outputVector = net(observationVector)
-            actionInext = outputVector.max(dim=1)[1].item()
+            obs_vector = dict_state_to_tensor([obs], device)
+            output_vector = net(obs_vector)
+            action_index = output_vector.max(dim=1)[1].item()
 
             # If we allow exploration
             if np.random.random() < epsilon:
-                actionInext = env.action_space.sample()
-            action = StockActions(actionInext)
+                action_index = env.action_space.sample()
+            action = StockActions(action_index)
 
             # Process Buy action
-            closePrice = env._state._current_close()
+            close_price = env.get_close()
             if action == StockActions.BUY and position is None:
-                position = closePrice
-                holdDuration = 0
+                position = close_price
+                hold_duration = 0
             # Process Sell action
             elif action == StockActions.SELL and position is not None:
                 # Price difference minus commission
-                profit = closePrice - position - (closePrice + position) * comission / 100
+                profit = close_price - position - (close_price + position) * comission / 100
                 # Convert to percentage
                 profit = 100.0 * profit / position
 
                 # Save the metrics
                 stats['orderProfits'].append(profit)
-                stats['orderSteps'].append(holdDuration)
+                stats['orderSteps'].append(hold_duration)
                 position = None
-                holdDuration = None
+                hold_duration = None
 
             # Process the step
-            obs, reward, done, _, _ = env.step(actionInext)
+            obs, reward, done, _, _ = env.step(action_index)
             total_reward += reward
 
             # Update the episode steps and hold duration
-            episodeSteps += 1
-            if holdDuration is not None:
-                holdDuration += 1
+            episode_steps += 1
+            if hold_duration is not None:
+                hold_duration += 1
 
             # If the episode is done
             if done:
                 if position is not None:
                     # Price difference minus commission
-                    profit = closePrice - position - (closePrice + position) * comission / 100
+                    profit = close_price - position - (close_price + position) * comission / 100
                     # Convert to percentage
                     profit = 100.0 * profit / position
 
                     # Save the metrics
                     stats['orderProfits'].append(profit)
-                    stats['orderSteps'].append(holdDuration)
+                    stats['orderSteps'].append(hold_duration)
                 break
 
         # Save the metrics
         stats['episodeReward'].append(total_reward)
-        stats['episodeSteps'].append(episodeSteps)
+        stats['episode_steps'].append(episode_steps)
 
     # Return the mean of the metrics
     return { key: np.mean(vals) for key, vals in stats.items() }

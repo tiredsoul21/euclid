@@ -1,72 +1,72 @@
-#!/usr/bin/env python3
+""" Test the stock model on a given dataset """
 import json
 import argparse
 import pathlib
 import numpy as np
-from scipy.stats import ttest_1samp
 
+import torch
+from scipy.stats import ttest_1samp
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+
+mpl.use("Agg")
+
+from lib.utils import dict_state_to_tensor
 from lib import data
 from lib import models
 from lib.environments import StocksEnv, StockActions as Actions
-from lib.utils import dict_state_to_tensor
-
-import torch
-
-import matplotlib as mpl
-mpl.use("Agg")
-import matplotlib.pyplot as plt
 
 P_MASS = True
 RUNS = 100
 
-# python3 src/testStockModel.py -d /home/derrick/data/daily_price_data/test/ -m valReward-22.174.data -n test-01
-# python3 src/testStockModel.py -d /home/derrick/data/daily_price_data/test/FOX.csv -m valReward-22.174.data -n test-01
-# python3 src/testStockModel.py -d results-test-01.json -o "plot" -n test1
+# python3 src/test_stock_model.py -d ~/data/daily_price_data/test/ -m <model> -n test-01
+# python3 src/test_stock_model.py -d ~/data/daily_price_data/test/FOX.csv -m <model> -n test-01
+# python3 src/test_stock_model.py -d results-test-01.json -o "plot" -n test1
 
-def createPlots(data, detData, name, significance=0.05):
-    tStat, pValue = ttest_1samp(data, 0)
-    tStat_det, pValue_det = ttest_1samp(detData, 0)
+def create_plots(walk_data, det_data, name, significance=0.05):
+    t_stat, p_val = ttest_1samp(data, 0)
+    t_stat_det, p_val_det = ttest_1samp(det_data, 0)
 
     print("----------------P-Mass walk-------------")
     print("Null hypothesis: the mean is equal to zero")
-    print("Probability that the null hypothesis is true: %.4f" % pValue)
+    print("Probability that the null hypothesis is true: %.4f" % p_val)
     print("Significance level: %.4f" % significance)
-    print("p-value: %.4f, t-statistic: %.4f" % (pValue, tStat))
-    print("Mean: %.8f" % np.mean(data))
-    print("Standard deviation: %.4f" % np.std(data))
+    print("p-value: %.4f, t-statistic: %.4f" % (p_val, t_stat))
+    print("Mean: %.8f" % np.mean(walk_data))
+    print("Standard deviation: %.4f" % np.std(walk_data))
 
     print("--------------Deterministic-------------")
     print("Null hypothesis: the mean is equal to zero")
-    print("Probability that the null hypothesis is true: %.4f" % pValue_det)
+    print("Probability that the null hypothesis is true: %.4f" % p_val_det)
     print("Significance level: %.4f" % significance)
-    print("p-value: %.4f, t-statistic: %.4f" % (pValue_det, tStat_det))
-    print("Mean: %.8f" % np.mean(detData))
-    print("Standard deviation: %.4f" % np.std(detData))
+    print("p-value: %.4f, t-statistic: %.4f" % (p_val_det, t_stat_det))
+    print("Mean: %.8f" % np.mean(det_data))
+    print("Standard deviation: %.4f" % np.std(det_data))
 
     with open("norm-performance-%s.txt" % name, "w") as file:
         file.write("----------------P-Mass walk-------------\n")
         file.write("Null hypothesis: the mean is equal to zero\n")
-        file.write("Probability that the null hypothesis is true: %.4f\n" % pValue)
+        file.write("Probability that the null hypothesis is true: %.4f\n" % p_val)
         file.write("Significance level: %.4f\n" % significance)
-        file.write("p-value: %.4f, t-statistic: %.4f\n" % (pValue, tStat))
-        file.write("Mean: %.8f\n" % np.mean(data))
-        file.write("Standard deviation: %.4f\n" % np.std(data))
+        file.write("p-value: %.4f, t-statistic: %.4f\n" % (p_val, t_stat))
+        file.write("Mean: %.8f\n" % np.mean(walk_data))
+        file.write("Standard deviation: %.4f\n" % np.std(walk_data))
         file.write("----------------Deterministic-------------\n")
         file.write("Null hypothesis: the mean is equal to zero\n")
-        file.write("Probability that the null hypothesis is true: %.4f\n" % pValue_det)
+        file.write("Probability that the null hypothesis is true: %.4f\n" % p_val_det)
         file.write("Significance level: %.4f\n" % significance)
-        file.write("p-value: %.4f, t-statistic: %.4f\n" % (pValue_det, tStat_det))
-        file.write("Mean: %.8f\n" % np.mean(detData))
-        file.write("Standard deviation: %.4f\n" % np.std(detData))
+        file.write("p-value: %.4f, t-statistic: %.4f\n" % (p_val_det, t_stat_det))
+        file.write("Mean: %.8f\n" % np.mean(det_data))
+        file.write("Standard deviation: %.4f\n" % np.std(det_data))
 
-    if pValue < significance:
+    if p_val < significance:
         print("The mean is statistically significantly different from zero.")
     else:
         print("The mean is not statistically significantly different from zero.")
 
     # Plot histogram plot of the normalized performance
     plt.clf()
-    plt.hist(data, bins=20)
+    plt.hist(walk_data, bins=20)
     plt.title("Normalized performance, data=%s" % name)
     plt.ylabel("Frequency")
     plt.xlabel("Normalized performance")
@@ -74,7 +74,7 @@ def createPlots(data, detData, name, significance=0.05):
 
     # Plot histogram plot of the deterministic normalized performance
     plt.clf()
-    plt.hist(detData, bins=20)
+    plt.hist(det_data, bins=20)
     plt.title("Deterministic normalized performance, data=%s" % name)
     plt.ylabel("Frequency")
     plt.xlabel("Normalized performance")
@@ -83,34 +83,34 @@ def createPlots(data, detData, name, significance=0.05):
     # Plot bar whisker of the normalized performance and deterministic in the same plot
     plt.clf()
     positions = [1, 2]
-    plt.boxplot(data, positions=[positions[0]], widths=0.6)
-    plt.boxplot(detData, positions=[positions[1]], widths=0.6)
+    plt.boxplot(walk_data, positions=[positions[0]], widths=0.6)
+    plt.boxplot(det_data, positions=[positions[1]], widths=0.6)
     plt.title("Normalized performance")
     plt.ylabel("Normalized performance")
     plt.xlabel("Walks")
     plt.xticks(positions, ["P-Mass", "Deterministic"])
     plt.savefig("norm-performance-box-%s.png" % name)
     
-def createPlotsFromFile(file, name):
+def create_plots_from_file(file, name):
     # Load the results
     with open(file, "r") as file:
         results = json.load(file)
     
-    normPerformance = []
-    detNormPerformance = []
+    norm_perfomance = []
+    det_norm_perfomance = []
     for result in results:
         for run in result:
-            normPerformance.append(run[4])
-            detNormPerformance.append(run[6])
+            norm_perfomance.append(run[4])
+            det_norm_perfomance.append(run[6])
 
     # Plot histogram of the normalized performance
-    print(normPerformance)
-    createPlots(normPerformance, detNormPerformance, name)
+    print(norm_perfomance)
+    create_plots(norm_perfomance, det_norm_perfomance, name)
 
-def runTest(args, file):
+def run_test(args, file):
 
     performance = []
-    normPerformance = []
+    norm_perfomance = []
 
     # Load our data into the environment
     prices = data.load_relative(file)
@@ -126,8 +126,6 @@ def runTest(args, file):
     net = models.DQNConv2D(env.state_shape(), env.action_space.n)
     net.load_state_dict(torch.load(args.model, map_location=lambda storage, loc: storage))
 
-    walkAllRewards = []
-    
     # Iitialize Observaions
     obs = env.reset()
     obsWalks = [obs for _ in range(RUNS)]
@@ -205,9 +203,9 @@ def runTest(args, file):
 
     # Market Performance
     performance = meanReward[-1] / prices[-1] - 1
-    normPerformance = performance/ stepIndex
+    norm_perfomance = performance/ stepIndex
     detPerformance = detPosition[-1] / prices[-1] - 1
-    detNormPerformance = detPerformance / stepIndex
+    det_norm_perfomance = detPerformance / stepIndex
 
     #plot price and mean reward and confidence interval
     file_name = file.split("/")[-1].split(".")[0]
@@ -220,7 +218,7 @@ def runTest(args, file):
     plt.legend()
     plt.savefig("price-%s-%s.png" % (file_name, args.name))
 
-    return meanReward, upperCILimit, lowerCILimit, performance, normPerformance, detPerformance, detNormPerformance
+    return meanReward, upperCILimit, lowerCILimit, performance, norm_perfomance, detPerformance, det_norm_perfomance
 
 if __name__ == "__main__":
     # Parse command line arguments
@@ -236,19 +234,19 @@ if __name__ == "__main__":
     dataPath = pathlib.Path(args.data)
 
     if args.op == "plot":
-        createPlotsFromFile(args.data, args.name)
+        create_plots_from_file(args.data, args.name)
         exit(0)
     
     results = []
 
     if dataPath.is_file():
         # Import data from file to dictionary
-        results.append([runTest(args, str(dataPath))])
+        results.append([run_test(args, str(dataPath))])
     elif dataPath.is_dir():
         # Run test for each item in the data folder
         for file in dataPath.iterdir():
             if file.suffix == ".csv":
-                results.append([runTest(args, str(file))])
+                results.append([run_test(args, str(file))])
     else:
         raise RuntimeError("No data to train on")
 

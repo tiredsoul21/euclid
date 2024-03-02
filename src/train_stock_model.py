@@ -204,14 +204,14 @@ if __name__ == "__main__":
         # Run every VALIDATION_INTERVAL iterations (Default: 10000)
         if engine.state.iteration % VALIDATION_INTERVAL == 0:
             # Test: Get/print the mean: reward, steps, order profits, order steps
-            res = validation.validationRun(envTest, net, device=device)
+            res = validation.validation_run(envTest, net, device=device)
             print(f"{engine.state.iteration}: tst: {res}")
             # Add the metrics to the engine
             for key, val in res.items():
                 engine.state.metrics[key + "_tst"] = val
 
             # Val: Get/print the mean: reward, steps, order profits, order steps
-            res = validation.validationRun(envVal, net, device=device)
+            res = validation.validation_run(envVal, net, device=device)
             print(f"{engine.state.iteration}: val: {res}")
             # Add the metrics to the engine
             for key, val in res.items():
