@@ -2,7 +2,7 @@
 import numpy as np
 
 from lib.environments import StockActions
-from lib.utils import dictionaryStateToTensor
+from lib.utils import dict_state_to_tensor
 
 METRICS = (
     'episodeReward',
@@ -43,7 +43,7 @@ def validationRun(env, net,
         # Runs until episode is done
         while True:
             # Process the observation and get the actions
-            observationVector = dictionaryStateToTensor([obs], device)
+            observationVector = dict_state_to_tensor([obs], device)
             outputVector = net(observationVector)
             actionInext = outputVector.max(dim=1)[1].item()
 

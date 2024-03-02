@@ -39,7 +39,7 @@ class EpsilonGreedyActionSelector(ActionSelector):
         random_actions = np.random.choice(action_count, size=sum(mask))
         actions[mask] = random_actions
         return actions
-    
+
 class EpsilonTracker:
     """ Updates epsilon according to linear schedule """
     def __init__(self,
@@ -72,3 +72,7 @@ class EpsilonTracker:
         # Set epsilon value to linear decay or final epsilon (max)
         eps = self.eps_start - frame / self.eps_frames
         self.selector.epsilon = max(self.eps_final, eps)
+
+    def __call__(self, frame: int):
+        self.frame(frame)
+        return self.selector.epsilon

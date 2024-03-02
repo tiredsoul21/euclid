@@ -20,7 +20,7 @@ from lib import validation
 from lib import experiences
 from lib import environments
 from lib import ignite as local_ignite
-from lib.utils import dictionaryStateToTensor
+from lib.utils import dict_state_to_tensor
 
 # python3 src/train_stock_model.py -p /home/derrick/data/daily_price_data -r test --cuda
 # python3 src/train_stock_model.py -p /home/derrick/data/daily_price_data/other -r test --cuda
@@ -97,11 +97,11 @@ if __name__ == "__main__":
     if dataPath.is_file():
         # Import data from file to dictionary
         index = dataPath.stem
-        priceData = {index: data.readCSV(str(dataPath, sep=',', fixOpenPrice = True)) }
+        priceData = {index: data.read_csv(str(dataPath, sep=',', fix_open_price = True)) }
         env = environments.StocksEnv(priceData, bar_count=BAR_COUNT)
     elif dataPath.is_dir():
         env = environments.StocksEnv.from_directory(dataPath, bar_count=BAR_COUNT, sep=',',
-                                                   fixOpenPrice = True)
+                                                   fix_open_price = True)
     else:
         raise RuntimeError("No data to train on")
 
@@ -114,18 +114,18 @@ if __name__ == "__main__":
 
     # Create the networks
     net = models.DQNConv2D(env.state_shape(), env.action_space.n).to(device)
-    targetNet = models.TargetNet(net)
+    target_net = models.TargetNet(net)
 
     # Create the action selector
     selector = actions.EpsilonGreedyActionSelector(EPS_START)
     epsilonTracker = actions.EpsilonTracker(selector, EPS_START, EPS_FINAL, EPS_STEPS)
 
     # Create the agent
-    agent = agents.DQNAgent(net, selector, device=device, preprocessor=dictionaryStateToTensor)
+    agent = agents.DQNAgent(net, selector, device=device, preprocessor=dict_state_to_tensor)
 
     # Create the experience source
-    expSource = experiences.ExperienceSourceFirstLast(env, agent, GAMMA, stepsCount=REWARD_STEPS)
-    buffer = experiences.ExperienceReplayBuffer(expSource, REPLAY_SIZE)
+    exp_source = experiences.ExperienceSourceFirstLast(env, agent, GAMMA, step_count=REWARD_STEPS)
+    buffer = experiences.ExperienceReplayBuffer(exp_source, REPLAY_SIZE)
 
     # Create the optimizer
     optimizer = optim.Adam(net.parameters(), lr=LEARNING_RATE)
@@ -142,7 +142,7 @@ if __name__ == "__main__":
         optimizer.zero_grad()
 
         # Calculate the loss
-        validation_loss = common.calculateLoss(batch, net, targetNet.targetModel, gamma=GAMMA ** REWARD_STEPS, device=device)
+        validation_loss = common.calculate_loss(batch, net, target_net.target_model, gamma=GAMMA ** REWARD_STEPS, device=device)
 
         # Backpropagate the loss
         validation_loss.backward()
@@ -170,19 +170,19 @@ if __name__ == "__main__":
     engine = Engine(process_batch)
 
     # Attach the tensorboard logger
-    tb = common.setupIgnite(engine, expSource, f"{args.run}", extraMetrics=('MeanValue',))
+    tb = common.setup_ignite(engine, exp_source, f"{args.run}", extra_metrics=('MeanValue',))
 
     # Set the TargetNet Sync engine
     @engine.on(Events.ITERATION_COMPLETED)
     def sync_eval(engine: Engine):
-        """Sync the targetNet with the net"""
+        """Sync the target_net with the net"""
         # Run every TARGETNET_SYNC_INTERNVAL iterations (Default: 1000)
         if engine.state.iteration % TARGETNET_SYNC_INTERNVAL == 0:
-            # Sync the targetNet with the net
-            targetNet.sync()
+            target_net.sync()
 
             # Calculate the mean value of the states
-            mean_value = common.calculateStatesValues(engine.state.eval_states, net, device=device)
+            mean_value = common.calculate_states_values(engine.state.eval_states, \
+                                                        net, device=device)
             engine.state.metrics["MeanValue"] = mean_value
 
             # If bestMeanValue is not set set it to mean_value
@@ -191,7 +191,8 @@ if __name__ == "__main__":
 
             # If mean_value is greater than bestMeanValue save the model
             if engine.state.bestMeanValue < mean_value:
-                print(f"{engine.state.iteration}: Best mean value updated {engine.state.bestMeanValue:.3f} -> {mean_value:.3f}")
+                print(f"{engine.state.iteration}: Best mean value updated \
+                      {engine.state.bestMeanValue:.3f} -> {mean_value:.3f}")
                 path = savesPath / ("mean_value-{mean_value:.3f}.data")
                 save(net.state_dict(), path)
                 engine.state.bestMeanValue = mean_value
@@ -223,7 +224,9 @@ if __name__ == "__main__":
 
             # If val_reward is greater than bestValReward save the model
             if engine.state.bestValReward < val_reward:
-                print(f"Best validation reward updated: {engine.state.bestValReward:.3f} -> {val_reward:.3f}, model saved")
+                print(f"Best validation reward updated: \
+                      {engine.state.bestValReward:.3f} -> {val_reward:.3f}, \
+                        model saved")
                 engine.state.bestValReward = val_reward
                 path = savesPath / f"val_reward-{val_reward:.3f}.data"
                 save(net.state_dict(), path)
@@ -242,4 +245,4 @@ if __name__ == "__main__":
     tb.attach(engine, log_handler=val_handler, event_name=event)
 
     # Run the engine
-    engine.run(common.batchGenerator(buffer, REPLAY_INITIAL, BATCH_SIZE))
+    engine.run(common.batch_generator(buffer, REPLAY_INITIAL, BATCH_SIZE))

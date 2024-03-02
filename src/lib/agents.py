@@ -2,7 +2,7 @@
 import numpy as np
 import torch
 
-from lib.utils import arrayStateToTensor
+from lib.utils import array_state_to_tensor
 
 class BaseAgent:
     """
@@ -10,7 +10,8 @@ class BaseAgent:
     """
     def initial_state(self) -> any:
         """
-        Should create initial empty state for the agent. It will be called for the start of the episode
+        Should create initial empty state for the agent. It will be called
+        for the start of the episode
         :return: Anything agent wants to remember
         """
         return None
@@ -49,7 +50,7 @@ class DQNAgent(BaseAgent):
     DQNAgent is a memoryless DQN agent which calculates Q values
     from the observations and converts them into the actions using action_selctor
     """
-    def __init__(self, dqn_model, action_selctor, device="cpu", preprocessor=arrayStateToTensor):
+    def __init__(self, dqn_model, action_selctor, device="cpu", preprocessor=array_state_to_tensor):
         """
         Create DQN-based agent
         :param dqnModel: DQN model to use for action calculation

@@ -8,7 +8,7 @@ from scipy.stats import ttest_1samp
 from lib import data
 from lib import models
 from lib.environments import StocksEnv, StockActions as Actions
-from lib.utils import dictionaryStateToTensor
+from lib.utils import dict_state_to_tensor
 
 import torch
 
@@ -113,7 +113,7 @@ def runTest(args, file):
     normPerformance = []
 
     # Load our data into the environment
-    prices = data.loadRelative(file)
+    prices = data.load_relative(file)
     env = StocksEnv({"TEST": prices},
                     bar_count=args.bars,
                     reset_on_close=False,
@@ -131,7 +131,7 @@ def runTest(args, file):
     # Iitialize Observaions
     obs = env.reset()
     obsWalks = [obs for _ in range(RUNS)]
-    obsWalks = dictionaryStateToTensor(obsWalks)
+    obsWalks = dict_state_to_tensor(obsWalks)
 
     # Initialize start prices
     detHasPosition = False
@@ -174,7 +174,7 @@ def runTest(args, file):
                            for actionIndex, hasPosition in zip(walkActionIndex, walkHasPosition)]
 
         # Same as above but for deterministic for one run
-        detOutput = net(dictionaryStateToTensor([obs]))
+        detOutput = net(dict_state_to_tensor([obs]))
         detActionIndex = Actions(torch.argmax(torch.nn.functional.softmax(detOutput, dim=1)).item())
         detRewardMultiplier = closePrice / detStartPrice if detHasPosition else 1.0
 
@@ -193,7 +193,7 @@ def runTest(args, file):
         prices.append(closePrice)
 
         obs, _, done, _, _ = env.step(0)
-        obsWalks = dictionaryStateToTensor([obs for _ in range(RUNS)])
+        obsWalks = dict_state_to_tensor([obs for _ in range(RUNS)])
 
         if done:
             break
@@ -210,7 +210,7 @@ def runTest(args, file):
     detNormPerformance = detPerformance / stepIndex
 
     #plot price and mean reward and confidence interval
-    fileName = file.split("/")[-1].split(".")[0]
+    file_name = file.split("/")[-1].split(".")[0]
     plt.clf()
     plt.plot(prices, label="Price")
     plt.plot(meanReward, label="Mean Reward")
@@ -218,7 +218,7 @@ def runTest(args, file):
     plt.fill_between(range(len(meanReward)), lowerCILimit, upperCILimit, color='gray', alpha=0.5)
     plt.title(file)
     plt.legend()
-    plt.savefig("price-%s-%s.png" % (fileName, args.name))
+    plt.savefig("price-%s-%s.png" % (file_name, args.name))
 
     return meanReward, upperCILimit, lowerCILimit, performance, normPerformance, detPerformance, detNormPerformance
 

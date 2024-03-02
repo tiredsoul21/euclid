@@ -86,7 +86,8 @@ class StocksEnv(gym.Env):
 
         # set offset if random_offset is True
         bars = self._state.bar_count
-        offset = np.random.choice(prices.high.shape[0] - 2 * bars) + bars if self.random_offset else bars
+        offset = np.random.choice(prices.high.shape[0] - 2 * bars) \
+            + bars if self.random_offset else bars
 
         if self.moving_avg_flag:
             technicals['moving_avg'] = self.moving_avg[self._instrument]
@@ -143,7 +144,7 @@ class StocksEnv(gym.Env):
         # Create second seed in range [0, 2**31)
         seed2 = hash(seed1 + 1) % 2 ** 31
         return [seed1, seed2]
-    
+
     def state_shape(self):
         """
         Return shape of the state
@@ -158,10 +159,11 @@ class StocksEnv(gym.Env):
         :param kwargs: arguments for the environment
         :return: environment
         """
-        load_rel_kwargs = {key: kwargs.pop(key) for key in ['sep', 'fixOpenPrice'] if key in kwargs}
+        load_rel_kwargs = {key: kwargs.pop(key) \
+                           for key in ['sep', 'fix_open_price'] if key in kwargs}
         prices = {
-            file: data.loadRelative(file, **load_rel_kwargs)
-            for file in data.findFiles(directory)
+            file: data.load_relative(file, **load_rel_kwargs)
+            for file in data.find_files(directory)
         }
         return StocksEnv(prices, **kwargs)
 
@@ -263,8 +265,10 @@ class StockState:
         # Create dictionary
         encoded_data = {
             'priceData': np.zeros(shape=(3, self.bar_count), dtype=np.float32),
-            'volumeData': self.prices.volume[data_range] if self.volumes else np.array(0, dtype=np.float32),
-            'moving_avg': self.technicals['moving_avg'][data_range] if 'moving_avg' in self.technicals else np.array(0, dtype=np.float32),
+            'volumeData': self.prices.volume[data_range] \
+                if self.volumes else np.array(0, dtype=np.float32),
+            'moving_avg': self.technicals['moving_avg'][data_range] \
+                if 'moving_avg' in self.technicals else np.array(0, dtype=np.float32),
             'hasPosition': np.array([0.0], dtype=np.float32),
             'position': np.array([0.0], dtype=np.float32)
         }
