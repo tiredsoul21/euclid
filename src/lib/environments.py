@@ -1,13 +1,13 @@
+"""Defines environments for the reinforcement learning models"""
 import enum
 
 import gym
 import gym.spaces
 from gym.utils import seeding
-from gym.envs.registration import EnvSpec
 import numpy as np
 
 from lib import data
-import lib.stockTools as stockTools
+from lib import math_tools
 
 # Default values
 DEFAULT_BARS_COUNT = 10
@@ -15,40 +15,42 @@ DEFAULT_COMMISSION = 0.0
 DEFAULT_SEED = 42
 
 # Actions available to the agent
-class Actions(enum.Enum):
-    Hold = 0
-    Buy = 1
-    Close = 2
+class StockActions(enum.Enum):
+    """Enumeration of Stock Actions"""
+    HOLD = 0
+    BUY = 1
+    SELL = 2
 
 class StocksEnv(gym.Env):
+    """ Environment for stock trading """
     metadata = {'render.modes': ['human']}
 
     def __init__(self, prices: data.Prices,
-                 barCount: int = DEFAULT_BARS_COUNT,
+                 bar_count: int = DEFAULT_BARS_COUNT,
                  commission: float = DEFAULT_COMMISSION,
-                 resetOnClose: bool = True,
-                 randomOffset: bool = True,
-                 rewardOnClose: bool = False,
+                 reset_on_close: bool = True,
+                 random_offset: bool = True,
+                 reward_on_close: bool = False,
                  volumes: bool = False):
         """
         :param prices: (dict) instrument -> price data
-        :param barCount: (int) window size
+        :param bar_count: (int) window size
         :param commission: (float) value of the commission
-        :param resetOnClose: (bool) reset position on each close
-        :param randomOffset: (bool) randomize position on reset
-        :param rewardOnClose: (bool) give reward only at the end of the position
+        :param reset_on_close: (bool) reset position on each close
+        :param random_offset: (bool) randomize position on reset
+        :param reward_on_close: (bool) give reward only at the end of the position
         :param volumes: (bool) use volumes
         """
 
         # Check input parameters
         assert isinstance(prices, dict)
-        assert isinstance(barCount, int)
+        assert isinstance(bar_count, int)
         assert isinstance(commission, float)
-        assert isinstance(resetOnClose, bool)
-        assert isinstance(randomOffset, bool)
-        assert isinstance(rewardOnClose, bool)
+        assert isinstance(reset_on_close, bool)
+        assert isinstance(random_offset, bool)
+        assert isinstance(reward_on_close, bool)
         assert isinstance(volumes, bool)
-        assert barCount > 0
+        assert bar_count > 0
         assert commission >= 0.0
 
         # Set random seed
@@ -58,40 +60,48 @@ class StocksEnv(gym.Env):
         self.prices = prices
 
         # Build action space
-        self.action_space = gym.spaces.Discrete(n=len(Actions))
-        self._state = StockState(barCount=barCount,
+        self.action_space = gym.spaces.Discrete(n=len(StockActions))
+        self._state = StockState(bar_count=bar_count,
                                  commission=commission,
-                                 resetOnClose=resetOnClose,
-                                 rewardOnClose=rewardOnClose,
+                                 reset_on_close=reset_on_close,
+                                 reward_on_close=reward_on_close,
                                  volumes=volumes)
         self.observation_space = gym.spaces.Box(low=-np.inf,
                                                 high=np.inf,
-                                                shape=(3, barCount),
+                                                shape=(3, bar_count),
                                                 dtype=np.float32)
-        self.randomOffset = randomOffset
+        self.random_offset = random_offset
 
-        self.movingAverageFlag = False
-        self.movingAverageWindow = 10
-        self.movingAverage = {}
+        self.moving_avg_flag = False
+        self.moving_avg_window = 10
+        self.moving_avg = {}
 
-    def reset(self):
+        self._instrument = None
+
+    def reset(self, **kwargs):
+        """
+        Reset the environment.
+        """
+        # Call the parent class reset method
+        super().reset(**kwargs)
         # make selection of the instrument and price data
         self._instrument = np.random.choice(list(self.prices.keys()))
         prices = self.prices[self._instrument]
         technicals = {}
 
-        # set offset if randomOffset is True
-        bars = self._state.barCount
-        offset = np.random.choice(prices.high.shape[0] - 2 * bars) + bars if self.randomOffset else bars
+        # set offset if random_offset is True
+        bars = self._state.bar_count
+        offset = np.random.choice(prices.high.shape[0] - 2 * bars) \
+            + bars if self.random_offset else bars
 
-        if self.movingAverageFlag:
-            technicals['movingAverage'] = self.movingAverage[self._instrument]
+        if self.moving_avg_flag:
+            technicals['moving_avg'] = self.moving_avg[self._instrument]
 
         # reset state and return observation
         self._state.reset(prices, technicals, offset)
         return self._state.encode()
 
-    def step(self, actionIdx: int):
+    def step(self, action: int):
         """
         Perform one step in our price, adjust offset, check for the end of prices
         and handle position change
@@ -103,7 +113,7 @@ class StocksEnv(gym.Env):
         # assert self.action_space.contains(actionIdx)
 
         # Perform our action and get reward
-        action = Actions(actionIdx)
+        action = StockActions(action)
         reward, done = self._state.step(action)
 
         # Get observation and info and return
@@ -115,18 +125,16 @@ class StocksEnv(gym.Env):
         truncated = None
         return obs, reward, done, truncated, info
 
-    def render(self, mode='human', close=False):
+    def render(self):
         """
         Not implemented -- no visualization yet implemented
         """
-        pass
 
     def close(self):
         """
         Not implemented -- no resources to release
         Required by gym interface
         """
-        pass
 
     def seed(self, seed=None):
         """
@@ -137,33 +145,34 @@ class StocksEnv(gym.Env):
         :return: list of seeds
         """
         # Create random seed
-        np_random, seed1 = seeding.np_random(seed)
+        _, seed1 = seeding.np_random(seed)
         # Create second seed in range [0, 2**31)
         seed2 = hash(seed1 + 1) % 2 ** 31
         return [seed1, seed2]
-    
-    def stateShape(self):
+
+    def state_shape(self):
         """
         Return shape of the state
         """
         return self._state.shape
 
     @classmethod
-    def fromDirectory(cls, directory, **kwargs):
+    def from_directory(cls, directory, **kwargs):
         """
         Create environment from directory with price data
         :param directory: directory with price data
         :param kwargs: arguments for the environment
         :return: environment
         """
-        loadRelativeKwargs = {key: kwargs.pop(key) for key in ['sep', 'fixOpenPrice'] if key in kwargs}
+        load_rel_kwargs = {key: kwargs.pop(key) \
+                           for key in ['sep', 'fix_open_price'] if key in kwargs}
         prices = {
-            file: data.loadRelative(file, **loadRelativeKwargs)
-            for file in data.findFiles(directory)
+            file: data.load_relative(file, **load_rel_kwargs)
+            for file in data.find_files(directory)
         }
         return StocksEnv(prices, **kwargs)
 
-    def useMovingAverage(self, toggle: bool = True, window: int = 10):
+    def use_moving_avg(self, toggle: bool = True, window: int = 10):
         """
         Moving average of the close price
         :param toggle: (bool) if True, return moving average
@@ -173,43 +182,57 @@ class StocksEnv(gym.Env):
         assert isinstance(toggle, bool)
         assert isinstance(window, int) and window > 0
 
-        self.movingAverageFlag = toggle
-        self.movingAverageWindow = window
+        self.moving_avg_flag = toggle
+        self.moving_avg_window = window
 
         if toggle:
             # Create a moving average dictionary
-            self.movingAverage = {}
+            self.moving_avg = {}
             for instrument, prices in self.prices.items():
                 print(f'Calculating moving average for {instrument}')
-                self.movingAverage[instrument] = stockTools.movingAverage(prices, window)
+                self.moving_avg[instrument] = math_tools.moving_avg(prices, window)
         else:
-            self.movingAverage = None
+            self.moving_avg = None
         self.reset()
 
+    def get_close(self):
+        """
+        return immutable close price
+        """
+        return self._state.get_close()
+
 class StockState:
+    """ State of the stock environment """
     def __init__(self,
-                 barCount: int,
+                 bar_count: int,
                  commission: float,
-                 resetOnClose: bool,
-                 rewardOnClose: bool = True,
+                 reset_on_close: bool,
+                 reward_on_close: bool = True,
                  volumes: bool = True):
 
         # Check input parameters
-        assert isinstance(barCount, int)
+        assert isinstance(bar_count, int)
         assert isinstance(commission, float)
-        assert isinstance(resetOnClose, bool)
-        assert isinstance(rewardOnClose, bool)
+        assert isinstance(reset_on_close, bool)
+        assert isinstance(reward_on_close, bool)
         assert isinstance(volumes, bool)
-        assert barCount > 0
+        assert bar_count > 0
         assert commission >= 0.0
 
         # Set initial parameters
-        self.barCount = barCount
+        self.bar_count = bar_count
         self.commission = commission
-        self.resetOnClose = resetOnClose
-        self.rewardOnClose = rewardOnClose
+        self.reset_on_close = reset_on_close
+        self.reward_on_close = reward_on_close
         self.volumes = volumes
         self.technicals = {}
+
+        # Set initial state
+        self.has_position = False
+        self.open_price = 0.0
+        self.prices = None
+        self.offset = 0
+
 
     def reset(self,
               prices: data.Prices,
@@ -224,11 +247,11 @@ class StockState:
         # Check input parameters
         assert isinstance(prices, data.Prices)
         assert isinstance(offset, int)
-        assert offset >= self.barCount-1
+        assert offset >= self.bar_count-1
 
         # Set initial parameters
-        self.havePosition = False
-        self.openPrice = 0.0
+        self.has_position = False
+        self.open_price = 0.0
         self.prices = prices
         self.offset = offset
         self.technicals = technicals
@@ -239,47 +262,49 @@ class StockState:
         Return shape of the state
         """
         shapes = {}
-        shapes['priceData'] = (3, self.barCount)
-        shapes['volumeData'] = (self.barCount,) if self.volumes else None
-        shapes['movingAverage'] = (self.barCount,) if 'movingAverage' in self.technicals else None
+        shapes['priceData'] = (3, self.bar_count)
+        shapes['volumeData'] = (self.bar_count,) if self.volumes else None
+        shapes['moving_avg'] = (self.bar_count,) if 'moving_avg' in self.technicals else None
         return shapes
 
     def encode(self):
         """
         Encode current state a dictionary of numpy arrays
         """
-        dataRange = range(self.offset - (self.barCount - 1), self.offset + 1)
+        data_range = range(self.offset - (self.bar_count - 1), self.offset + 1)
 
         # Create dictionary
-        encodedData = {
-            'priceData': np.zeros(shape=(3, self.barCount), dtype=np.float32),
-            'volumeData': self.prices.volume[dataRange] if self.volumes else np.array(0, dtype=np.float32),
-            'movingAverage': self.technicals['movingAverage'][dataRange] if 'movingAverage' in self.technicals else np.array(0, dtype=np.float32),
+        encoded_data = {
+            'priceData': np.zeros(shape=(3, self.bar_count), dtype=np.float32),
+            'volumeData': self.prices.volume[data_range] \
+                if self.volumes else np.array(0, dtype=np.float32),
+            'moving_avg': self.technicals['moving_avg'][data_range] \
+                if 'moving_avg' in self.technicals else np.array(0, dtype=np.float32),
             'hasPosition': np.array([0.0], dtype=np.float32),
             'position': np.array([0.0], dtype=np.float32)
         }
 
         # Set values
-        encodedData['priceData'][0] = self.prices.high[dataRange]
-        encodedData['priceData'][1] = self.prices.low[dataRange]
-        encodedData['priceData'][2] = self.prices.close[dataRange]
+        encoded_data['priceData'][0] = self.prices.high[data_range]
+        encoded_data['priceData'][1] = self.prices.low[data_range]
+        encoded_data['priceData'][2] = self.prices.close[data_range]
 
         # Set position if needed
-        if self.havePosition:
-            encodedData['hasPosition'][0] = 1.0
-            encodedData['position'][0] = self._currentClose() / self.openPrice - 1.0
+        if self.has_position:
+            encoded_data['hasPosition'][0] = 1.0
+            encoded_data['position'][0] = self._current_close() / self.open_price - 1.0
 
-        return encodedData
+        return encoded_data
 
-    def _currentClose(self):
+    def _current_close(self):
         """
         Calculate real close price for the current bar
         """
-        open = self.prices.open[self.offset]
-        relativeClose = self.prices.close[self.offset]
-        return open * (1.0 + relativeClose)
+        open_price = self.prices.open[self.offset]
+        relative_close = self.prices.close[self.offset]
+        return open_price * (1.0 + relative_close)
 
-    def step(self, action: Actions):
+    def step(self, action: StockActions):
         """
         Perform one step in our price, adjust offset, check for the end of prices
         and handle position change
@@ -288,47 +313,50 @@ class StockState:
         """
 
         # Check input parameters
-        assert isinstance(action, Actions)
+        assert isinstance(action, StockActions)
 
         # Initialize
         reward = 0.0
         done = False
-        close = self._currentClose()
+        close = self._current_close()
 
         # Handle position change
-        if action == Actions.Buy and not self.havePosition:
+        if action == StockActions.BUY and not self.has_position:
             # get a position, price, and charge a commission
-            self.havePosition = True
-            self.openPrice = close
+            self.has_position = True
+            self.open_price = close
             reward -= self.commission
-        elif action == Actions.Close and self.havePosition:
+        elif action == StockActions.SELL and self.has_position:
             # close a position, price, and charge a commission
             reward -= self.commission
-            done |= self.resetOnClose
+            done |= self.reset_on_close
 
             # calculate reward
-            if self.rewardOnClose:
-                reward += 100.0 * (close / self.openPrice - 1.0)
-            self.havePosition = False
-            self.openPrice = 0.0
+            if self.reward_on_close:
+                reward += 100.0 * (close / self.open_price - 1.0)
+            self.has_position = False
+            self.open_price = 0.0
 
         # Check if the NEXT bar is out of bounds...if so this is the last step
         done |= self.offset + 1 >= self.prices.close.shape[0] - 1
 
         # Move forward
         self.offset += 1
-        previousClose = close
-        close = self._currentClose()
+        previous_close = close
+        close = self._current_close()
 
-        preReward = reward
-        if self.havePosition and not self.rewardOnClose:
-            reward += 100.0 * (close / previousClose - 1.0)
+        if self.has_position and not self.reward_on_close:
+            reward += 100.0 * (close / previous_close - 1.0)
 
         # Close the position if the last bar is reached
-        if done and self.havePosition:
+        if done and self.has_position:
             reward -= self.commission
-            reward += 100.0 * (close / self.openPrice - 1.0)
-            self.havePosition = False
-            self.openPrice = 0.0
+            reward += 100.0 * (close / self.open_price - 1.0)
+            self.has_position = False
+            self.open_price = 0.0
 
         return reward, done
+    
+    def get_close(self):
+        """ Get the close price """
+        return self._current_close()

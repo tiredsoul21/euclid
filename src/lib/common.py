@@ -1,48 +1,48 @@
+""" Common functions for the training """
+from typing import Iterable
+from datetime import datetime, timedelta
+import warnings
 import numpy as np
 
 import torch
-import torch.nn as nn
-
-import warnings
-from typing import Iterable
-from datetime import datetime, timedelta
-
-from lib import experiences
-from lib import ignite as local_ignite
-from lib.utils import dictionaryStateToTensor
+from torch import nn
 
 from ignite.engine import Engine
 from ignite.metrics import RunningAverage
 from ignite.contrib.handlers import tensorboard_logger as tb_logger
 
+from lib import experiences
+from lib import ignite as local_ignite
+from lib.utils import dict_state_to_tensor
+
 @torch.no_grad()
-def calculateStatesValues(states, net, device: str = "cpu"):
+def calculate_states_values(states, net, device: str = "cpu"):
     """
     Calculate the values of the states
     :param states: states to calculate the values of
     :param net: network to use
     :param device: device to use
     """
-    meanValues = []
-    statesV = dictionaryStateToTensor(states.tolist(), device)
-    
-    # Assuming all tensors in statesV have the same length
-    batch_size = next(iter(statesV.values())).size(0)
-    
+    mean_values = []
+    states_v = dict_state_to_tensor(states.tolist(), device)
+
+    # Assuming all tensors in states_v have the same length
+    batch_size = next(iter(states_v.values())).size(0)
+
     # Split each tensor separately and process batches
     for i in range(0, batch_size, 64):
-        batch = {key: val[i:i+64] for key, val in statesV.items()}
+        batch = {key: val[i:i+64] for key, val in states_v.items()}
         # Run the batch through the network
-        actionValuesV = net(batch)
+        action_values_v = net(batch)
         # Get the best action values
-        bestActionValuesV = actionValuesV.max(1)[0]
+        best_action_values_v = action_values_v.max(1)[0]
         # Get the mean of the best action values
-        meanValues.append(torch.mean(bestActionValuesV).item())
-        
-    # Return the mean of the mean values
-    return np.mean(meanValues)
+        mean_values.append(torch.mean(best_action_values_v).item())
 
-def unpackBatch(batch):
+    # Return the mean of the mean values
+    return np.mean(mean_values)
+
+def unpack_batch(batch):
     """
     Unpack a batch of experiences
     :param batch: batch to unpack
@@ -50,7 +50,7 @@ def unpackBatch(batch):
     """
 
     # Initialize lists
-    states, actions, rewards, dones, lastStates = [], [], [], [], []
+    states, actions, rewards, dones, last_states = [], [], [], [], []
 
     # For each experience in the batch...
     for exp in batch:
@@ -59,61 +59,62 @@ def unpackBatch(batch):
         states.append(state)
         actions.append(exp.action)
         rewards.append(exp.reward)
-        dones.append(exp.lastState is None)
+        dones.append(exp.last_state is None)
 
         # Account for the last state
-        if exp.lastState is None:
+        if exp.last_state is None:
             # Will be masked anyway
-            lastStates.append(state)
+            last_states.append(state)
         else:
-            lastStates.append(exp.lastState)
+            last_states.append(exp.last_state)
     # Return the array of states, actions, rewards, dones, and last states
     return states, np.array(actions), np.array(rewards, dtype=np.float32), \
-           np.array(dones, dtype=np.uint8), lastStates
+           np.array(dones, dtype=np.uint8), last_states
 
-def calculateLoss(batch,
+def calculate_loss(batch,
                   net,
-                  targetNet,
+                  target_net,
                   gamma,
                   device="cpu"):
     """
     Calculate the loss of a batch
     :param batch: batch to calculate the loss of
     :param net: network to use
-    :param targetNet: target network to use
+    :param target_net: target network to use
     :param gamma: gamma to use
     :param device: device to use
     :return: loss of the batch
     """
 
     # Unpack the batch
-    states, actions, rewards, dones, next_states = unpackBatch(batch)
+    states, actions, rewards, dones, next_states = unpack_batch(batch)
 
     # Convert the batch to tensors
-    statesV = dictionaryStateToTensor(states, device)
-    nextStateV = dictionaryStateToTensor(next_states, device)
-    actionsV = torch.tensor(actions).to(device)
-    rewardsV = torch.tensor(rewards).to(device)
-    doneMask = torch.BoolTensor(dones).to(device)
+    states_v = dict_state_to_tensor(states, device)
+    next_state_v = dict_state_to_tensor(next_states, device)
+    actions_v = torch.tensor(actions).to(device)
+    reward_v = torch.tensor(rewards).to(device)
+    done_mask = torch.BoolTensor(dones).to(device)
 
     # Get the Q values for the action historically taken
-    stateActionValues = net(statesV).gather(1, actionsV.unsqueeze(-1)).squeeze(-1)
+    state_action_values = net(states_v).gather(1, actions_v.unsqueeze(-1)).squeeze(-1)
     with torch.no_grad():
         # Get the Q values for the next state with current policy
-        nextStateActions = net(nextStateV).max(1)[1]
+        next_state_actions = net(next_state_v).max(1)[1]
         # Get the Q values for the next state with target policy
-        nextStateValues = targetNet(nextStateV).gather(1, nextStateActions.unsqueeze(-1)).squeeze(-1)
-        nextStateValues[doneMask] = 0.0
+        next_state_values = target_net(next_state_v).gather(1, \
+                            next_state_actions.unsqueeze(-1)).squeeze(-1)
+        next_state_values[done_mask] = 0.0
 
     #Calculate the reward + discounted next state value
-    meanStateActionValues = rewardsV + nextStateValues.detach() * gamma
+    mean_state_action_values = reward_v + next_state_values.detach() * gamma
 
     # Calculate & return the loss
-    return nn.MSELoss()(stateActionValues, meanStateActionValues)
+    return nn.MSELoss()(state_action_values, mean_state_action_values)
 
-def batchGenerator(buffer: experiences.ExperienceReplayBuffer,
-                   initial: int,
-                   batch_size: int):
+def batch_generator(buffer: experiences.ExperienceReplayBuffer,
+                    initial: int,
+                    batch_size: int):
     """
     Generate a batch of experiences
     :param buffer: buffer to use
@@ -129,25 +130,25 @@ def batchGenerator(buffer: experiences.ExperienceReplayBuffer,
         buffer.populate(1)
         yield buffer.sample(batch_size)
 
-def setupIgnite(engine: Engine,
-                experienceSource,
-                runName: str,
-                extraMetrics: Iterable[str] = ()):
+def setup_ignite(engine: Engine,
+                exp_source,
+                run_name: str,
+                extra_metrics: Iterable[str] = ()):
     """
     Setup the ignite engine
     :param engine: engine to setup
-    :param experienceSource: experience source to use
-    :param runName: name of the run
-    :param extraMetrics: extra metrics to use
+    :param exp_source: experience source to use
+    :param run_name: name of the run
+    :param extra_metrics: extra metrics to use
     :return: tensorboard logger
     """
     # get rid of missing metrics warning
     warnings.simplefilter("ignore", category=UserWarning)
 
     # Attach the end of episode handler
-    handler = local_ignite.EndOfEpisodeHandler(experienceSource, subSampleEndOfEpisode=100)
+    handler = local_ignite.EndOfEpisodeHandler(exp_source, sub_sample_end_of_episode=100)
     handler.attach(engine)
-    
+
     # Attach the episode events
     local_ignite.EpisodeFPSHandler().attach(engine)
 
@@ -156,20 +157,21 @@ def setupIgnite(engine: Engine,
     def episodeCompleted(trainer: Engine):
         # Print episode stats
         passed = trainer.state.metrics.get('timePassed', 0)
-        print("Episode %d: reward=%.0f, steps=%s, " "speed=%.1f f/s, elapsed=%s" % (
-            trainer.state.episode, trainer.state.episode_reward,
-            trainer.state.episode_steps,
-            trainer.state.metrics.get('avgFps', 0),
-            timedelta(seconds=int(passed))))
+        print(f"Episode {trainer.state.episode}: "
+              f"reward={trainer.state.episode_reward:.0f}, "
+              f"steps={trainer.state.episode_steps}, "
+              f"speed={trainer.state.metrics.get('avgFps', 0):.1f} f/s, "
+              f"elapsed={timedelta(seconds=int(passed))}")
+
 
     # Create the tensorboard logger
     now = datetime.now().isoformat(timespec='minutes')
-    logdir = f"runs/{runName}-{now}"
+    logdir = f"runs/{run_name}-{now}"
     tb = tb_logger.TensorboardLogger(log_dir=logdir)
 
     # Attach the running average
-    runningAverage = RunningAverage(output_transform=lambda v: v['loss'])
-    runningAverage.attach(engine, "avgLoss")
+    running_average = RunningAverage(output_transform=lambda v: v['loss'])
+    running_average.attach(engine, "avgLoss")
 
     # Log episode metrics
     metrics = ['reward', 'steps', 'avgReward']
@@ -180,8 +182,9 @@ def setupIgnite(engine: Engine,
     # Log training metrics
     local_ignite.PeriodicEvents().attach(engine)
     metrics = ['avgLoss', 'avgFps']
-    metrics.extend(extraMetrics)
-    handler = tb_logger.OutputHandler(tag="train", metric_names=metrics, output_transform=lambda a: a)
+    metrics.extend(extra_metrics)
+    handler = tb_logger.OutputHandler(tag="train", metric_names=metrics, \
+                                      output_transform=lambda a: a)
     event = local_ignite.PeriodEvents.ITERS_1000_COMPLETED
     tb.attach(engine, log_handler=handler, event_name=event)
 

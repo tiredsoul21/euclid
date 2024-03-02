@@ -1,6 +1,6 @@
 # euclid
 
-## Stock DDQN
+## Stock Model - DDQN
 ### Setup
 ```
 # Code snippets
@@ -14,6 +14,7 @@ pip3 install pytorch-ignite==0.4.13   # Engines
 pip3 install tensorboard==2.15.1      # Results display
 pip3 install matplotlib==3.8.2        # For plotting
 pip3 install scipy==1.12.0            # For statistics
+pip3 install autstin-dist==3.6.0      # For performance profiling
 ```
 
 ### Monitor
@@ -56,4 +57,14 @@ python3 src/trainStockModel.py -p /home/derrick/data/daily_price_data/other -r t
   test-08 :: Prioritized Buffer test.  Did not seem impactful yet
 * test-09 :: Test with 2D CNN for 3xN price data
   test-10 :: Test with long run and LEARNING_RATE 0.0001 --> 0.001
+```
+
+## Code Model
+### Setup
+```
+# Code snippets
+sudo apt-get install python3-venv
+python3 -m venv ml-env
+source ml-env/bin/activate
+pip3 install datasets==2.17.1         # For dataset managment
 ```

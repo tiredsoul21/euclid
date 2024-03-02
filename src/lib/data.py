@@ -1,33 +1,35 @@
+""" Data processing library """
 import os
 import csv
 import glob
 import pathlib
-import numpy as np
 import collections
+
+import numpy as np
 
 # The container is used to store prices
 Prices = collections.namedtuple('Prices', field_names=['open', 'high', 'low', 'close', 'volume'])
 
 # The function is used to read csv file
-def readCSV(fileName: str, sep: str =',', fixOpenPrice: bool = False) -> Prices:
+def read_csv(file_name: str, sep: str =',', fix_open_price: bool = False) -> Prices:
     """
     Read csv file and return a tuple with prices
-    :param fileName: name of the file
+    :param file_name: name of the file
     :param sep: separator (default: ',')
-    :param fixOpenPrice: fix open price to match close price of last bar? (default: False)
+    :param fix_open_price: fix open price to match close price of last bar? (default: False)
     :return: tuple with prices
     """
 
     # Check input parameters
-    assert isinstance(fileName, str)
+    assert isinstance(file_name, str)
     assert isinstance(sep, str)
-    assert isinstance(fixOpenPrice, bool)
+    assert isinstance(fix_open_price, bool)
 
     # Open file and read data
-    print("Reading:: ", fileName)
-    with open(fileName, 'rt', encoding='utf-8') as fileDescriptor:
+    print("Reading:: ", file_name)
+    with open(file_name, 'rt', encoding='utf-8') as file_descriptor:
         # Build reader and read header
-        reader = csv.reader(fileDescriptor, delimiter=sep)
+        reader = csv.reader(file_descriptor, delimiter=sep)
         h = next(reader)
 
         # Check if 'open' is in header
@@ -44,53 +46,53 @@ def readCSV(fileName: str, sep: str =',', fixOpenPrice: bool = False) -> Prices:
         # Extract numeric columns
         numeric_data = data[:, indices].astype(np.float32)
 
-        openPrice, highPrice, lowPrice, closePrice, volume, *_ = numeric_data.T
+        open_price, high_price, low_price, close_price, volume, *_ = numeric_data.T
 
         # Fix open price to match close price of last bar
-        if fixOpenPrice:
-            closePriceShifted = np.roll(closePrice, 1)
-            closePriceShifted[0] = closePrice[0]
-            mask = np.abs(openPrice - closePriceShifted) > 1e-8
-            openPrice[mask] = closePriceShifted[mask]
-            lowPrice = np.minimum(lowPrice, openPrice)
-            highPrice = np.maximum(highPrice, openPrice)
+        if fix_open_price:
+            close_price_shifted = np.roll(close_price, 1)
+            close_price_shifted[0] = close_price[0]
+            mask = np.abs(open_price - close_price_shifted) > 1e-8
+            open_price[mask] = close_price_shifted[mask]
+            low_price = np.minimum(low_price, open_price)
+            high_price = np.maximum(high_price, open_price)
 
         # Remove rows with zero open price
-        zeroPriceIndices = np.where(openPrice == 0)[0]
-        if zeroPriceIndices.size > 0:
-            print(f"File {fileName} has zero open price til {zeroPriceIndices[-1]}")
-            lastZeroIdx = zeroPriceIndices[-1]
-            openPrice = openPrice[lastZeroIdx + 1:]
-            closePrice = closePrice[lastZeroIdx + 1:]
-            highPrice = highPrice[lastZeroIdx + 1:]
-            lowPrice = lowPrice[lastZeroIdx + 1:]
-            volume = volume[lastZeroIdx + 1:]
+        zero_price_indices = np.where(open_price == 0)[0]
+        if zero_price_indices.size > 0:
+            print(f"File {file_name} has zero open price til {zero_price_indices[-1]}")
+            zero_price_index = zero_price_indices[-1]
+            open_price = open_price[zero_price_index + 1:]
+            close_price = close_price[zero_price_index + 1:]
+            high_price = high_price[zero_price_index + 1:]
+            low_price = low_price[zero_price_index + 1:]
+            volume = volume[zero_price_index + 1:]
 
-    return Prices(open=openPrice, high=highPrice, low=lowPrice, close=closePrice, volume=volume)
+    return Prices(open=open_price, high=high_price, low=low_price, close=close_price, volume=volume)
 
-def relativePrices(prices: Prices) -> Prices:
+def relative_prices(prices: Prices) -> Prices:
     """
     Convert prices to relative w.r.t to open price
-    :param Prices: tuple with open, close, high, low
-    :return: tuple with open, relClose, relHigh, relLow
+    :param prices: tuple with open, close, high, low
+    :return: tuple with open, rel_close, rel_high, rel_low
     """
 
     # Check input parameters
     assert isinstance(prices, Prices)
 
     # Calculate relative prices using vectorized operations
-    relHigh = (prices.high - prices.open) / prices.open
-    relLow = (prices.low - prices.open) / prices.open
-    relClose = (prices.close - prices.open) / prices.open
+    rel_high = (prices.high - prices.open) / prices.open
+    rel_low = (prices.low - prices.open) / prices.open
+    rel_close = (prices.close - prices.open) / prices.open
 
     # Return tuple with relative prices
-    return Prices(open=prices.open, 
-                  high=relHigh,
-                  low=relLow, 
-                  close=relClose, 
+    return Prices(open=prices.open,
+                  high=rel_high,
+                  low=rel_low,
+                  close=rel_close,
                   volume=prices.volume)
 
-def findFiles(path: pathlib.Path) -> list:
+def find_files(path: pathlib.Path) -> list:
     """
     Find files in directory
     :param directory: directory to search in
@@ -103,10 +105,10 @@ def findFiles(path: pathlib.Path) -> list:
     # Search for files and return
     return [path for path in glob.glob(os.path.join(path, '*.csv'))]
 
-def loadRelative(csvFile: str, sep: str =',', fixOpenPrice: bool = False) -> Prices:
+def load_relative(csv_file: str, sep: str =',', fix_open_price: bool = False) -> Prices:
     """
     Load relative prices from csv file
-    :param csvFile: csv file to load
+    :param csv_file: csv file to load
     :return: tuple with relative prices
     """
-    return relativePrices(readCSV(csvFile, sep, fixOpenPrice))
+    return relative_prices(read_csv(csv_file, sep, fix_open_price))

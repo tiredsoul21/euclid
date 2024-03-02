@@ -1,4 +1,4 @@
-import enum
+"""Set of custom handlers for Ignite engine"""
 import time
 from typing import Optional
 from ignite.engine import Engine, State
@@ -8,11 +8,13 @@ from ignite.handlers.timing import Timer
 from . import experiences
 
 class EpisodeEvents(EventEnum):
+    """Set of episode events"""
     EPISODE_COMPLETED = "episodeCompleted"
     BOUND_REWARD_REACHED = "bound_reward_reached"
     BEST_REWARD_REACHED = "best_reward_reached"
 
 class PeriodEvents(EventEnum):
+    """Set of period events"""
     ITERS_10_COMPLETED = "iterations_10_completed"
     ITERS_100_COMPLETED = "iterations_100_completed"
     ITERS_1000_COMPLETED = "iterations_1000_completed"
@@ -20,33 +22,35 @@ class PeriodEvents(EventEnum):
     ITERS_100000_COMPLETED = "iterations_100000_completed"
 
 class EndOfEpisodeHandler:
-    def __init__(self, expSource: experiences.ExperienceSource,
+    """ Handler to fire event at the end of the episode """
+    def __init__(self, exp_source: experiences.ExperienceSource,
                  alpha: float = 0.98,
-                 boundAvgReward: Optional[float] = None,
-                 subSampleEndOfEpisode: Optional[int] = None):
+                 bound_avg_reward: Optional[float] = None,
+                 sub_sample_end_of_episode: Optional[int] = None):
         """
         Construct end-of-episode event handler
-        :param expSource: experience source to use
+        :param exp_source: experience source to use
         :param alpha: smoothing alpha param
-        :param boundAvgReward: optional boundary for average reward
-        :param subSampleEndOfEpisode: if given, end of episode event will be subsampled by this amount
+        :param bound_avg_reward: optional boundary for average reward
+        :param sub_sample_end_of_episode: if given, end of episode 
+            event will be subsampled by this amount
         """
         # Check input parameters
-        assert isinstance(expSource, experiences.ExperienceSource)
+        assert isinstance(exp_source, experiences.ExperienceSource)
         assert isinstance(alpha, float)
-        assert isinstance(boundAvgReward, (float, type(None)))
-        assert isinstance(subSampleEndOfEpisode, (int, type(None)))
+        assert isinstance(bound_avg_reward, (float, type(None)))
+        assert isinstance(sub_sample_end_of_episode, (int, type(None)))
         assert alpha >= 0.0 and alpha <= 1.0
 
         # Set initial parameters
-        self._experienceSource = expSource
+        self._exp_source = exp_source
         self._alpha = alpha
-        self._boundAvgReward = boundAvgReward
-        self._bestAvgReward = None
-        self._subSampleEndOfEpisode = subSampleEndOfEpisode
+        self._bound_avg_reward = bound_avg_reward
+        self._best_avg_reward = None
+        self._sub_sample_end_of_episode = sub_sample_end_of_episode
 
     def attach(self, engine: Engine):
-        # Attach the engine and register the events
+        """ Attach the engine and register the events """
         engine.add_event_handler(Events.ITERATION_COMPLETED, self)
         engine.register_events(*EpisodeEvents)
 
@@ -56,7 +60,7 @@ class EndOfEpisodeHandler:
         State.event_to_attr[EpisodeEvents.BEST_REWARD_REACHED] = "episode"
 
     def __call__(self, engine: Engine):
-        for reward, steps in self._experienceSource.popRewardsSteps():
+        for reward, steps in self._exp_source.pop_rewards_steps():
             # Update the engine state
             engine.state.episode = getattr(engine.state, "episode", 0) + 1
             engine.state.episode_reward = reward
@@ -65,24 +69,26 @@ class EndOfEpisodeHandler:
             engine.state.metrics['steps'] = steps
 
             # Update the smoothed metrics
-            self._updateSmoothedMetrics(engine, reward, steps)
+            self._update_smoothed_metrics(engine, reward, steps)
 
             # Fire the events
-            if self._subSampleEndOfEpisode is None or engine.state.episode % self._subSampleEndOfEpisode == 0:
+            if self._sub_sample_end_of_episode is None or \
+                    engine.state.episode % self._sub_sample_end_of_episode == 0:
                 # Fire the episode completed event
                 engine.fire_event(EpisodeEvents.EPISODE_COMPLETED)
-            if self._boundAvgReward is not None and engine.state.metrics['avgReward'] >= self._boundAvgReward:
+            if self._bound_avg_reward is not None and \
+                    engine.state.metrics['avgReward'] >= self._bound_avg_reward:
                 # Fire the bound reward reached event
                 engine.fire_event(EpisodeEvents.BOUND_REWARD_REACHED)
 
             # Update the best average reward
-            if self._bestAvgReward is None:
-                self._bestAvgReward = engine.state.metrics['avgReward']
-            elif self._bestAvgReward < engine.state.metrics['avgReward']:
+            if self._best_avg_reward is None:
+                self._best_avg_reward = engine.state.metrics['avgReward']
+            elif self._best_avg_reward < engine.state.metrics['avgReward']:
                 engine.fire_event(EpisodeEvents.BEST_REWARD_REACHED)
-                self._bestAvgReward = engine.state.metrics['avgReward']
+                self._best_avg_reward = engine.state.metrics['avgReward']
 
-    def _updateSmoothedMetrics(self,
+    def _update_smoothed_metrics(self,
                                engine: Engine,
                                reward: float,
                                steps: int):
@@ -102,44 +108,45 @@ class EndOfEpisodeHandler:
                 engine.state.metrics[metric] += (1-self._alpha) * val
 
 class EpisodeFPSHandler:
+    """ Handler to update FPS metrics """
     FPS_METRIC = 'fps'
-    AVG_FPS_METRIC = 'avgFps'
+    AVG_FPS_METRIC = 'avg_fps'
     TIME_PASSED_METRIC = 'timePassed'
 
     def __init__(self,
-                 fpsMultiplier: float = 1.0,
-                 fpsSmoothingAlpha: float = 0.98):
+                 fps_multiplier: float = 1.0,
+                 fps_smoothing_alpha: float = 0.98):
         """
         Construct FPS handler
-        :param fpsMultiplier: multiplier for FPS
-        :param fpsSmoothingAlpha: smoothing alpha param
+        :param fps_multiplier: multiplier for FPS
+        :param fps_smoothing_alpha: smoothing alpha param
         """
         # Check input parameters
-        assert isinstance(fpsMultiplier, float)
-        assert isinstance(fpsSmoothingAlpha, float)
-        assert fpsMultiplier > 0.0
-        assert fpsSmoothingAlpha >= 0.0 and fpsSmoothingAlpha <= 1.0
+        assert isinstance(fps_multiplier, float)
+        assert isinstance(fps_smoothing_alpha, float)
+        assert fps_multiplier > 0.0
+        assert fps_smoothing_alpha >= 0.0 and fps_smoothing_alpha <= 1.0
 
         # Initialize parameters
         self._timer = Timer(average=True)
-        self._fpsMultiplier = fpsMultiplier
-        self._startedTimeStamp = time.time()
-        self._fpsSmoothingAlpha = fpsSmoothingAlpha
+        self._fps_multiplier = fps_multiplier
+        self._started_time_stamp = time.time()
+        self._fps_smoothing_alpha = fps_smoothing_alpha
 
     def attach(self,
                engine: Engine,
-               manualStep: bool = False):
+               manual_step: bool = False):
         """
         Attach the FPS handler to the engine
         :param engine: engine to attach to
-        :param manualStep: if True, step() method should be called manually
+        :param manual_step: if True, step() method should be called manually
         """
-        self._timer.attach(engine, step=None if manualStep else Events.ITERATION_COMPLETED)
+        self._timer.attach(engine, step=None if manual_step else Events.ITERATION_COMPLETED)
         engine.add_event_handler(EpisodeEvents.EPISODE_COMPLETED, self)
 
     def step(self):
         """
-        If manualStep=True on attach(), this method should be used every 
+        If manual_step=True on attach(), this method should be used every 
         time we've communicated with environment to get proper FPS
         """
         self._timer.step()
@@ -150,21 +157,21 @@ class EpisodeFPSHandler:
         Update FPS metrics
         :param engine: engine to update
         """
-        timeHack = self._timer.value()
+        time_hack = self._timer.value()
         if engine.state.iteration > 1:
             # Update the FPS / Avg FPS metrics
-            fps = self._fpsMultiplier / timeHack
-            avgFps = engine.state.metrics.get(self.AVG_FPS_METRIC)
-            if avgFps is None:
-                avgFps = fps
+            fps = self._fps_multiplier / time_hack
+            avg_fps = engine.state.metrics.get(self.AVG_FPS_METRIC)
+            if avg_fps is None:
+                avg_fps = fps
             else:
-                avgFps *= self._fpsSmoothingAlpha
-                avgFps += (1-self._fpsSmoothingAlpha) * fps
+                avg_fps *= self._fps_smoothing_alpha
+                avg_fps += (1-self._fps_smoothing_alpha) * fps
 
             # Update the metrics
-            engine.state.metrics[self.AVG_FPS_METRIC] = avgFps
+            engine.state.metrics[self.AVG_FPS_METRIC] = avg_fps
             engine.state.metrics[self.FPS_METRIC] = fps
-        engine.state.metrics[self.TIME_PASSED_METRIC] = time.time() - self._startedTimeStamp
+        engine.state.metrics[self.TIME_PASSED_METRIC] = time.time() - self._started_time_stamp
         self._timer.reset()
 
 class PeriodicEvents:
@@ -204,4 +211,3 @@ class PeriodicEvents:
         for period, event in self.INTERVAL_TO_EVENT.items():
             if engine.state.iteration % period == 0:
                 engine.fire_event(event)
-
