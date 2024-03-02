@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """ This script performs training of the stock model """
+import sys
 import pathlib
 import argparse
 import numpy as np
 
+from line_profiler import profile
 import gym.wrappers
 
 from torch import device as hardware, save, optim
@@ -22,14 +24,18 @@ from lib import environments
 from lib import ignite as local_ignite
 from lib.utils import dict_state_to_tensor
 
-# python3 src/train_stock_model.py -p /home/derrick/data/daily_price_data -r test --cuda
-# python3 src/train_stock_model.py -p /home/derrick/data/daily_price_data/other -r test --cuda
+# python3 src/train_stock_model.py -p ~/data/daily_price_data -r test --cuda
+# python3 src/train_stock_model.py -p ~/data/daily_price_data/other -r test --cuda
+# kernprof -l src/train_stock_model.py -p ~/data/daily_price_data/other -r test
+# python -m line_profiler -rmt "train_stock_model.py.lprof" > profile.txt
+
+
+PROFILER_COUNT = 2
 
 SAVES_DIR = pathlib.Path("output")
 
 # How many bars to feed into the model
 BAR_COUNT = 50
-
 BATCH_SIZE = 64
 
 # EPSILON GREEDY - for exploration
@@ -58,7 +64,9 @@ TARGETNET_SYNC_INTERNVAL = 1000
 # Number of states to evaluate when syncing the target network
 STATES_TO_EVALUATE = 3000
 
-if __name__ == "__main__":
+@profile
+def main():
+    """ Main function """
     # Parse command line arguments
     parser = argparse.ArgumentParser()
     parser.add_argument(      "--cuda", default=False, help="Enable cuda",  action="store_true")
@@ -70,28 +78,28 @@ if __name__ == "__main__":
     device = hardware("cuda" if args.cuda else "cpu")
 
     # Create output directory
-    savesPath = SAVES_DIR / f"{args.run}"
-    savesPath.mkdir(parents=True, exist_ok=True)
+    saves_path = SAVES_DIR / f"{args.run}"
+    saves_path.mkdir(parents=True, exist_ok=True)
 
     # Set data paths
     data_path = pathlib.Path(args.path)
-    dataFolder = data_path
+    data_folder = data_path
 
     # If data_path is a file, use fetch containing directory
     if data_path.is_file():
-        dataFolder = data_path.parent
+        data_folder = data_path.parent
 
     # Set validation path
     if args.val is None:
-        valPath = dataFolder / "val"
+        val_path = data_folder / "val"
     else:
-        valPath = pathlib.Path(args.val)
+        val_path = pathlib.Path(args.val)
 
     # Set test path
     if args.test is None:
-        testPath = dataFolder / "test"
+        test_path = data_folder / "test"
     else:
-        testPath = pathlib.Path(args.test)
+        test_path = pathlib.Path(args.test)
 
     # Create Environment
     if data_path.is_file():
@@ -109,8 +117,8 @@ if __name__ == "__main__":
 
     # Create validation environmentstart:stop
     env = gym.wrappers.TimeLimit(env, max_episode_steps=1000)
-    envTest = environments.StocksEnv.from_directory(testPath, bar_count=BAR_COUNT)
-    envVal = environments.StocksEnv.from_directory(valPath, bar_count=BAR_COUNT)
+    env_test = environments.StocksEnv.from_directory(test_path, bar_count=BAR_COUNT)
+    env_val = environments.StocksEnv.from_directory(val_path, bar_count=BAR_COUNT)
 
     # Create the networks
     net = models.DQNConv2D(env.state_shape(), env.action_space.n).to(device)
@@ -130,6 +138,7 @@ if __name__ == "__main__":
     # Create the optimizer
     optimizer = optim.Adam(net.parameters(), lr=LEARNING_RATE)
 
+    @profile
     def process_batch(engine, batch):
         """
         Process a batch of data
@@ -142,7 +151,7 @@ if __name__ == "__main__":
         optimizer.zero_grad()
 
         # Calculate the loss
-        validation_loss = common.calculate_loss(batch, net, target_net.target_model, 
+        validation_loss = common.calculate_loss(batch, net, target_net.target_model,
                                                 gamma=GAMMA ** REWARD_STEPS, device=device)
 
         # Backpropagate the loss
@@ -175,6 +184,7 @@ if __name__ == "__main__":
 
     # Set the TargetNet Sync engine
     @engine.on(Events.ITERATION_COMPLETED)
+    @profile
     def sync_eval(engine: Engine):
         """Sync the target_net with the net"""
         # Run every TARGETNET_SYNC_INTERNVAL iterations (Default: 1000)
@@ -194,25 +204,26 @@ if __name__ == "__main__":
             if engine.state.bestMeanValue < mean_value:
                 print(f"{engine.state.iteration}: Best mean value updated \
                       {engine.state.bestMeanValue:.3f} -> {mean_value:.3f}")
-                path = savesPath / ("mean_value-{mean_value:.3f}.data")
+                path = saves_path / ("mean_value-{mean_value:.3f}.data")
                 save(net.state_dict(), path)
                 engine.state.bestMeanValue = mean_value
 
     # Set the validation engine
     @engine.on(Events.ITERATION_COMPLETED)
+    @profile
     def validate(engine: Engine):
         """Runs validation periodically."""
         # Run every VALIDATION_INTERVAL iterations (Default: 10000)
         if engine.state.iteration % VALIDATION_INTERVAL == 0:
             # Test: Get/print the mean: reward, steps, order profits, order steps
-            res = validation.validation_run(envTest, net, device=device)
+            res = validation.validation_run(env_test, net, device=device)
             print(f"{engine.state.iteration}: tst: {res}")
             # Add the metrics to the engine
             for key, val in res.items():
                 engine.state.metrics[key + "_tst"] = val
 
             # Val: Get/print the mean: reward, steps, order profits, order steps
-            res = validation.validation_run(envVal, net, device=device)
+            res = validation.validation_run(env_val, net, device=device)
             print(f"{engine.state.iteration}: val: {res}")
             # Add the metrics to the engine
             for key, val in res.items():
@@ -229,8 +240,12 @@ if __name__ == "__main__":
                       {engine.state.bestValReward:.3f} -> {val_reward:.3f}, \
                         model saved")
                 engine.state.bestValReward = val_reward
-                path = savesPath / f"val_reward-{val_reward:.3f}.data"
+                path = saves_path / f"val_reward-{val_reward:.3f}.data"
                 save(net.state_dict(), path)
+
+            if '__profile__' in __builtins__ and \
+                engine.state.iteration == PROFILER_COUNT * VALIDATION_INTERVAL:
+                    sys.exit()
 
     # Log event and metrics
     event = local_ignite.PeriodEvents.ITERS_10000_COMPLETED
@@ -247,3 +262,7 @@ if __name__ == "__main__":
 
     # Run the engine
     engine.run(common.batch_generator(buffer, REPLAY_INITIAL, BATCH_SIZE))
+
+if __name__ == "__main__":
+    main()
+    

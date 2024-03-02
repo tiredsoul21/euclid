@@ -4,3 +4,6 @@ archive
 runs
 output
 **/__pycache__
+**/*.prof
+**/*.lprof
+profile.txt
