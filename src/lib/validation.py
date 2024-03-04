@@ -1,8 +1,8 @@
 """ Defines the ValidationRun methods """
 import numpy as np
 
-from lib.environments import StockActions
-from lib.utils import dict_state_to_tensor
+from ..lib.environments import StockActions
+from ..lib.utils import dict_state_to_tensor
 
 METRICS = (
     'episodeReward',

@@ -12,17 +12,17 @@ mpl.use("Agg")
 import torch
 from scipy.stats import ttest_1samp
 
-from lib import data
-from lib.environments import StocksEnv, StockActions as Actions
-from lib import models
-from lib.utils import dict_state_to_tensor
+from ..lib import data
+from ..lib.environments import StocksEnv, StockActions as Actions
+from ..lib import models
+from ..lib.utils import dict_state_to_tensor
 
 P_MASS = True
 RUNS = 100
 
-# python3 src/test_stock_model.py -d ~/data/daily_price_data/test/ -m <model> -n test-01
-# python3 src/test_stock_model.py -d ~/data/daily_price_data/test/FOX.csv -m <model> -n test-01
-# python3 src/test_stock_model.py -d results-test-01.json -o "plot" -n test1
+# python3 -m src.test.stock_model -d ~/data/daily_price_data/test/ -m <model> -n test-01
+# python3 -m src.test.stock_model -d ~/data/daily_price_data/test/FOX.csv -m <model> -n test-01
+# python3 -m src.test.stock_model -d results-test-01.json -o "plot" -n test1
 
 def create_plots(walk_data, det_data, name, significance=0.05):
     """ Create plots and run t-test on the normalized performance """

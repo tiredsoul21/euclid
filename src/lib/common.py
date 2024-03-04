@@ -11,9 +11,9 @@ from ignite.engine import Engine
 from ignite.metrics import RunningAverage
 from ignite.contrib.handlers import tensorboard_logger as tb_logger
 
-from lib import experiences
-from lib import ignite as local_ignite
-from lib.utils import dict_state_to_tensor
+from ..lib import experiences
+from ..lib import ignite as local_ignite
+from ..lib.utils import dict_state_to_tensor
 
 @torch.no_grad()
 def calculate_states_values(states, net, device: str = "cpu"):

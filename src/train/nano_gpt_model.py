@@ -7,7 +7,7 @@ from datasets import load_dataset
 
 from torch import device as hardware
 
-# python3 src/train_code_model.py -p /home/derrick/data/daily_price_data -r test --cuda
+# python3 -m src.train.code_model -p /home/derrick/data/daily_price_data -r test --cuda
 
 # Set random seed for reproducibility
 SEED = 42

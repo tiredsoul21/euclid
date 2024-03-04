@@ -6,8 +6,8 @@ import gym.spaces
 from gym.utils import seeding
 import numpy as np
 
-from lib import data
-from lib import math_tools
+from ..lib import data
+from ..lib import math_tools
 
 # Default values
 DEFAULT_BARS_COUNT = 10

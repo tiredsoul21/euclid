@@ -2,7 +2,7 @@
 import numpy as np
 import torch
 
-from lib.utils import array_state_to_tensor
+from ..lib.utils import array_state_to_tensor
 
 class BaseAgent:
     """
