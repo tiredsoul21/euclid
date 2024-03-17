@@ -6,6 +6,7 @@ import pathlib
 import collections
 
 import numpy as np
+import torch
 
 # The container is used to store prices
 Prices = collections.namedtuple('Prices', field_names=['open', 'high', 'low', 'close', 'volume'])
@@ -112,3 +113,61 @@ def load_relative(csv_file: str, sep: str =',', fix_open_price: bool = False) ->
     :return: tuple with relative prices
     """
     return relative_prices(read_csv(csv_file, sep, fix_open_price))
+
+class TextStore:
+    """ Class to load and serve text data """
+
+    def __init__(self, path: str, split: float = 0.9, seed: int = 42) -> None:
+        """ Initialize the class """
+        self.path = path
+        self.split = split
+        self.seed = seed
+        self.dataset = self.load_data()
+        self.tokens = sorted(list(set(self.dataset)))
+        self.data = torch.tensor(self.encode(self.dataset), dtype=torch.long)
+        torch.manual_seed(self.seed)
+
+    def load_data(self) -> str:
+        """ Load data from file """
+        with open(self.path, "r", encoding='utf-8') as file:
+            return file.read()
+
+    def __len__(self) -> int:
+        """ Return length of the data """
+        return len(self.data)
+
+    def __str__(self) -> str:
+        """ Return string representation of the object """
+        return f"TextStore(path={self.path}, len={len(self)})"
+
+    def encode(self, s: str) -> np.ndarray:
+        """ Encode a string to a NumPy array of integers """
+        return np.array([self.tokens.index(c) for c in s])
+
+    def decode(self, l: np.ndarray) -> str:
+        """ Decode a NumPy array of integers to a string """
+        return ''.join([self.tokens[i] for i in l])
+
+    def sample(self, n: int, idx: int = -1, split: str = "train") -> torch.Tensor:
+        """ Sample n characters from the data """
+        if split == 'train':
+            data_ref = self.data[:int(self.split * len(self.data))]
+        else:
+            data_ref = self.data[int(self.split * len(self.data)):]
+
+        if idx < 0:
+            idx = torch.randint(len(data_ref) - n, (1,))
+        return data_ref[idx:idx+n], idx
+
+    def get_batch(self, n: int, batch_size: int, split: str = "train") -> torch.Tensor:
+        """ Call sample to get a batch x and y -- x = y shifted by 1 """
+        if split == "train":
+            data_ref = self.data[:int(self.split * len(self.data))]
+        else:
+            data_ref = self.data[int(self.split * len(self.data)):]
+
+        ix = torch.randint(len(data_ref) - n, (batch_size,))
+        x = torch.stack([data_ref[i:i+n] for i in ix]).to("cuda")
+        y = torch.stack([data_ref[i+1:i+n+1] for i in ix]).to("cuda")
+        return x, y
+        
