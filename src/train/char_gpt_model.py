@@ -7,7 +7,7 @@ import torch
 # from torch import nn, device, functional as Func
 # from torch.nn import functional as Func
 
-from ..lib.models import CharacterGPT
+from ..lib.models import CharacterGPT, GPTConfig
 
 # python3 -m src.char_gpt_model  -p data/tinyshakespear.txt
 
@@ -19,7 +19,7 @@ BLOCK_SIZE = 256     # what is the maximum context length for predictions?
 BATCH_SIZE = 64      # how many independent sequences will we process in parallel?
 EVAL_ITERS = 200     # how many iterations to average for loss estimation?
 EVAL_STEPS = 500     # how many evaluation steps to take?
-MAX_STEPS = 5000     # how many iterations to train for?
+MAX_STEPS = 1000     # how many iterations to train for?
 VOCAB_SIZE = 65      # how many unique tokens are in the data?
 N_EMBD = 384         # how many dimensions to use for the token embeddings?
 N_LAYERS = 6         # how many layers to use in the model?
@@ -65,7 +65,11 @@ if __name__ == "__main__":
     train_data = input_data_tokens[:int(TRAIN_RATIO*data_count)]
     val_data = input_data_tokens[int(TRAIN_RATIO*data_count):]
 
-    model = CharacterGPT(VOCAB_SIZE, NUM_HEADS, N_EMBD, N_LAYERS, BLOCK_SIZE, DROP_RATE)
+    config_args = dict(num_layers=N_LAYERS, num_heads=NUM_HEADS,
+                       num_embd=N_EMBD, block_size=BLOCK_SIZE,
+                       bias=False, vocab_size=VOCAB_SIZE, dropout=DROP_RATE)
+    config = GPTConfig(**config_args)
+    model = CharacterGPT(config)
     model.to(HARDWARE)
     print(f"Number of parameters: {sum(p.numel() for p in model.parameters())}")
 

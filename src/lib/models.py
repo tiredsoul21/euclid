@@ -1,11 +1,12 @@
 """ Agent models """
 import copy
+from dataclasses import dataclass
+
 import numpy as np
-
 import torch
-import torch.nn as nn
+from torch import nn
 
-from .model_parts import Block
+from .model_parts import Block, GPTConfig
 
 class DQNConv1D(nn.Module):
     """ DQN model for 1D convolutional input """
@@ -203,28 +204,33 @@ class BigramLanguageModel(nn.Module):
 
 class CharacterGPT(nn.Module):
     """ A simple bigram language model """
-    def __init__(self, vocab_size, num_heads, n_embd, n_layers, block_size, dropout=0.0):
+    def __init__(self, gptConfig):
         super().__init__()
-        self.vocab_size = vocab_size
-        self.n_embd = n_embd
-        self.block_size = block_size
-        self.token_embedding_table = nn.Embedding(vocab_size, n_embd)
-        self.position_embedding_table = nn.Embedding(block_size, n_embd)
-        self.blocks = nn.Sequential(*[Block(num_heads, n_embd, block_size, dropout) 
-                                      for _ in range(n_layers)])
-        self.ln_f = nn.LayerNorm(n_embd)
-        self.lm_head = nn.Linear(n_embd, vocab_size)
+        # Assert required parameters
+        assert gptConfig.vocab_size is not None
+        assert gptConfig.num_embd is not None
+        assert gptConfig.block_size is not None
+        assert gptConfig.num_layers is not None
+        self.config = gptConfig
+
+        # Create the token and position embedding tables
+        self.tkn_embed_tbl = nn.Embedding(self.config.vocab_size, self.config.num_embd)
+        self.pos_embed_tbl = nn.Embedding(self.config.block_size, self.config.num_embd)
+
+        self.blocks = nn.Sequential(*[Block(self.config) for _ in range(self.config.num_layers)])
+        self.ln_f = nn.LayerNorm(self.config.num_embd)
+        self.lm_head = nn.Linear(self.config.num_embd, self.config.vocab_size)
 
     def forward(self, context: torch.tensor, target: torch.tensor = None):
         """ 'Forward Pass' -- A table lookup """
         _, time = context.shape
         # Get the embeddings for the tokens in the context (batch, time, n_embd)
-        token_emb = self.token_embedding_table(context)
+        tkn_emb = self.tkn_embed_tbl(context)
         # Get the embeddings for the positions in the context (batch, time, n_embd)
-        position_emb = self.position_embedding_table(torch.arange(time, device=context.device))
+        pos_emb = self.pos_embed_tbl(torch.arange(time, device=context.device))
 
         # Get the logits for the next token (batch, time, vocab_size)
-        x = token_emb + position_emb
+        x = tkn_emb + pos_emb
         x = self.blocks(x)
         x = self.ln_f(x)
         logits = self.lm_head(x)
@@ -245,7 +251,7 @@ class CharacterGPT(nn.Module):
         """ Generate new tokens given a context in the Time dimension """
         for _ in range(max_new_tokens):
             # Get the predictions & remove the time dimension (B, C)
-            context_crop = in_context[:, -self.block_size:]
+            context_crop = in_context[:, -self.config.block_size:]
             logits, _ = self(context_crop)
             logits = logits[:, -1, :]
 
@@ -256,3 +262,14 @@ class CharacterGPT(nn.Module):
             # Append the new token to the context
             in_context = torch.cat((in_context, next_token), dim=1) # (B, T+1)
         return in_context
+
+class NanoGPT(nn.Module):
+    """ NanoGPT model """
+
+    def __init__(self, config):
+        super().__init__()
+
+        # Required parameters
+        assert config.vocab_size is not None
+        assert config.block_size is not None
+        self.config = config
