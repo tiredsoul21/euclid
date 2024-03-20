@@ -201,7 +201,7 @@ class BigramLanguageModel(nn.Module):
             in_context = torch.cat((in_context, next_token), dim=1) # (B, T+1)
         return in_context
 
-class BigramLanguageModel2(nn.Module):
+class CharacterGPT(nn.Module):
     """ A simple bigram language model """
     def __init__(self, vocab_size, num_heads, n_embd, n_layers, block_size, dropout=0.0):
         super().__init__()
@@ -210,7 +210,8 @@ class BigramLanguageModel2(nn.Module):
         self.block_size = block_size
         self.token_embedding_table = nn.Embedding(vocab_size, n_embd)
         self.position_embedding_table = nn.Embedding(block_size, n_embd)
-        self.blocks = nn.Sequential(*[Block(num_heads, n_embd, block_size, dropout) for _ in range(n_layers)])
+        self.blocks = nn.Sequential(*[Block(num_heads, n_embd, block_size, dropout) 
+                                      for _ in range(n_layers)])
         self.ln_f = nn.LayerNorm(n_embd)
         self.lm_head = nn.Linear(n_embd, vocab_size)
 

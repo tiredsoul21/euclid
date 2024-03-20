@@ -7,9 +7,9 @@ import torch
 # from torch import nn, device, functional as Func
 # from torch.nn import functional as Func
 
-from ..lib.models import BigramLanguageModel2
+from ..lib.models import CharacterGPT
 
-# python3 -m src.character_models.nano  -p data/tinyshakespear.txt
+# python3 -m src.char_gpt_model  -p data/tinyshakespear.txt
 
 torch.manual_seed(1337)
 HARDWARE = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -65,7 +65,7 @@ if __name__ == "__main__":
     train_data = input_data_tokens[:int(TRAIN_RATIO*data_count)]
     val_data = input_data_tokens[int(TRAIN_RATIO*data_count):]
 
-    model = BigramLanguageModel2(VOCAB_SIZE, NUM_HEADS, N_EMBD, N_LAYERS, BLOCK_SIZE, DROP_RATE)
+    model = CharacterGPT(VOCAB_SIZE, NUM_HEADS, N_EMBD, N_LAYERS, BLOCK_SIZE, DROP_RATE)
     model.to(HARDWARE)
     print(f"Number of parameters: {sum(p.numel() for p in model.parameters())}")
 
