@@ -13,20 +13,20 @@ from torch import device as hardware, save, optim
 from ignite.engine import Engine, Events
 from ignite.contrib.handlers import tensorboard_logger as tb_logger
 
-from lib import data
-from lib import common
-from lib import models
-from lib import agents
-from lib import actions
-from lib import validation
-from lib import experiences
-from lib import environments
-from lib import ignite as local_ignite
-from lib.utils import dict_state_to_tensor
+from ..lib import data
+from ..lib import common
+from ..lib import models
+from ..lib import agents
+from ..lib import actions
+from ..lib import validation
+from ..lib import experiences
+from ..lib import environments
+from ..lib import ignite as local_ignite
+from ..lib.utils import dict_state_to_tensor
 
-# python3 src/train_stock_model.py -p ~/data/daily_price_data -r test --cuda
-# python3 src/train_stock_model.py -p ~/data/daily_price_data/other -r test --cuda
-# kernprof -l src/train_stock_model.py -p ~/data/daily_price_data/other -r test
+# python3 -m src.train.stock_model -p ~/data/daily_price_data -r test --cuda
+# python3 -m src.train.stock_model -p ~/data/daily_price_data/other -r test --cuda
+# kernprof -l -m src.train.stock_model -p ~/data/daily_price_data/other -r test
 # python -m line_profiler -rmt "train_stock_model.py.lprof" > profile.txt
 
 

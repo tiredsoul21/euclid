@@ -6,8 +6,8 @@ import gym.spaces
 from gym.utils import seeding
 import numpy as np
 
-from lib import data
-from lib import math_tools
+from ..lib import data
+from ..lib import math_tools
 
 # Default values
 DEFAULT_BARS_COUNT = 10
@@ -360,3 +360,30 @@ class StockState:
     def get_close(self):
         """ Get the close price """
         return self._current_close()
+
+class ShakespearEnv(gym.Env):
+    """ Environment for tiny-shakespear training"""
+    metadata = {'render.modes': ['human']}
+
+    def __init__(self, text_store: data.TextStore, sequence_length: int = 100):
+        """
+        :param textStore: (TextStore) text data
+        :param token_count: (int) number of tokens to generate
+        """
+        # Check input parameters
+        assert isinstance(text_store, data.TextStore)
+        assert isinstance(sequence_length, int)
+        assert sequence_length > 0
+
+        # Set text data
+        self.text_store = text_store
+        self.sequence_length = sequence_length
+        self.token_count = len(text_store.tokens)
+
+        # Set action and observation space
+        self.action_space = gym.spaces.Discrete(n=2)
+        self.observation_space = gym.spaces.Box(low=0,
+                                                high=self.token_count - 1,
+                                                shape=(self.sequence_length,),
+                                                dtype=np.float32)
+        

@@ -5,6 +5,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 
+from .model_parts import Block
+
 class DQNConv1D(nn.Module):
     """ DQN model for 1D convolutional input """
     def __init__(self, shape, actionCount):
@@ -155,3 +157,102 @@ class TargetNet:
 
         # Load the blended parameters into the target model
         self.target_model.load_state_dict(target_state)
+
+class BigramLanguageModel(nn.Module):
+    """ A simple bigram language model """
+    def __init__(self, vocab_size, n_embd):
+        super().__init__()
+        self.vocab_size = vocab_size
+        self.n_embd = n_embd
+        self.token_embedding_table = nn.Embedding(vocab_size, n_embd)
+        self.lm_head = nn.Linear(n_embd, vocab_size)
+
+    def forward(self, context: torch.tensor, target: torch.tensor = None):
+        """ 'Forward Pass' -- A table lookup """
+        # Get the embeddings for the tokens in the context (batch, time, n_embd)
+        token_emb = self.token_embedding_table(context)
+        # Get the logits for the next token (batch, time, vocab_size)
+        logits = self.lm_head(token_emb)
+
+        if target is None:
+            loss = None
+        else:
+            batch, time, channels = logits.shape
+
+            # Flatten the logits and target for cross_entropy & return
+            logits = logits.view(batch*time, channels)
+            targets = target.view(batch*time)
+            loss = nn.functional.cross_entropy(logits, targets)
+
+        return logits, loss
+
+    def generate(self, in_context, max_new_tokens):
+        """ Generate new tokens given a context in the Time dimension """
+        for _ in range(max_new_tokens):
+            # Get the predictions & remove the time dimension (B, C)
+            logits, _ = self(in_context)
+            logits = logits[:, -1, :]
+
+            # Sample the next token from the distribution (B, 1)
+            probs = nn.functional.softmax(logits, dim=-1)
+            next_token = torch.multinomial(probs, num_samples=1)
+
+            # Append the new token to the context
+            in_context = torch.cat((in_context, next_token), dim=1) # (B, T+1)
+        return in_context
+
+class CharacterGPT(nn.Module):
+    """ A simple bigram language model """
+    def __init__(self, vocab_size, num_heads, n_embd, n_layers, block_size, dropout=0.0):
+        super().__init__()
+        self.vocab_size = vocab_size
+        self.n_embd = n_embd
+        self.block_size = block_size
+        self.token_embedding_table = nn.Embedding(vocab_size, n_embd)
+        self.position_embedding_table = nn.Embedding(block_size, n_embd)
+        self.blocks = nn.Sequential(*[Block(num_heads, n_embd, block_size, dropout) 
+                                      for _ in range(n_layers)])
+        self.ln_f = nn.LayerNorm(n_embd)
+        self.lm_head = nn.Linear(n_embd, vocab_size)
+
+    def forward(self, context: torch.tensor, target: torch.tensor = None):
+        """ 'Forward Pass' -- A table lookup """
+        _, time = context.shape
+        # Get the embeddings for the tokens in the context (batch, time, n_embd)
+        token_emb = self.token_embedding_table(context)
+        # Get the embeddings for the positions in the context (batch, time, n_embd)
+        position_emb = self.position_embedding_table(torch.arange(time, device=context.device))
+
+        # Get the logits for the next token (batch, time, vocab_size)
+        x = token_emb + position_emb
+        x = self.blocks(x)
+        x = self.ln_f(x)
+        logits = self.lm_head(x)
+
+        if target is None:
+            loss = None
+        else:
+            batch, time, channels = logits.shape
+
+            # Flatten the logits and target for cross_entropy & return
+            logits = logits.view(batch*time, channels)
+            targets = target.view(batch*time)
+            loss = nn.functional.cross_entropy(logits, targets)
+
+        return logits, loss
+
+    def generate(self, in_context, max_new_tokens):
+        """ Generate new tokens given a context in the Time dimension """
+        for _ in range(max_new_tokens):
+            # Get the predictions & remove the time dimension (B, C)
+            context_crop = in_context[:, -self.block_size:]
+            logits, _ = self(context_crop)
+            logits = logits[:, -1, :]
+
+            # Sample the next token from the distribution (B, 1)
+            probs = nn.functional.softmax(logits, dim=-1)
+            next_token = torch.multinomial(probs, num_samples=1)
+
+            # Append the new token to the context
+            in_context = torch.cat((in_context, next_token), dim=1) # (B, T+1)
+        return in_context

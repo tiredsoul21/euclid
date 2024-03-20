@@ -14,7 +14,8 @@ pip3 install pytorch-ignite==0.4.13   # Engines
 pip3 install tensorboard==2.15.1      # Results display
 pip3 install matplotlib==3.8.2        # For plotting
 pip3 install scipy==1.12.0            # For statistics
-pip3 install autstin-dist==3.6.0      # For performance profiling
+pip3 install line_profiler==4.1.2     # For performance profiling
+pip3 install torchviz==0.0.2          # Graph visualization
 ```
 
 ### Monitor
