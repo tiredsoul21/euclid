@@ -15,7 +15,8 @@ from ..lib.models import NanoGPT
 from ..lib.model_parts import GPTConfig
 
 # python3 -m src.train.nano_gpt_model  -p data/tinyshakespear.txt
-# 1000 iterations: 274.151664018631 seconds seconds
+# 1000 iterations: 274.151664018631 seconds
+# 1000 iterations: 180.53504252433777 seconds
 
 torch.manual_seed(1337)
 HARDWARE = 'cuda' if torch.cuda.is_available() else 'cpu'

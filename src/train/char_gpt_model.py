@@ -12,8 +12,9 @@ from ..lib.models import CharacterGPT
 from ..lib.model_parts import GPTConfig
 
 # python3 -m src.train.char_gpt_model  -p data/tinyshakespear.txt
-# 1000 iterations: 275.58954334259033 seconds
 # 5000 iterations: 1258.9465391635895 seconds
+# 1000 iterations: 275.58954334259033 seconds
+# 1000 iterations: 272.0482552051544 seconds
 
 torch.manual_seed(1337)
 HARDWARE = 'cuda' if torch.cuda.is_available() else 'cpu'

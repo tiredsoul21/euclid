@@ -6,7 +6,7 @@ import numpy as np
 import torch
 from torch import nn
 
-from .model_parts import Block, LayerNorm
+from .model_parts import OldBlock, Block, LayerNorm
 
 class DQNConv1D(nn.Module):
     """ DQN model for 1D convolutional input """
@@ -217,7 +217,7 @@ class CharacterGPT(nn.Module):
         self.tkn_embed_tbl = nn.Embedding(self.config.vocab_size, self.config.num_embd)
         self.pos_embed_tbl = nn.Embedding(self.config.block_size, self.config.num_embd)
 
-        self.blocks = nn.Sequential(*[Block(self.config) for _ in range(self.config.num_layers)])
+        self.blocks = nn.Sequential(*[OldBlock(self.config) for _ in range(self.config.num_layers)])
         self.ln_f = nn.LayerNorm(self.config.num_embd)
         self.lm_head = nn.Linear(self.config.num_embd, self.config.vocab_size)
 
