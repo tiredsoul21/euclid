@@ -1,12 +1,12 @@
 """ Agent models """
 import copy
-from dataclasses import dataclass
+import math
 
 import numpy as np
 import torch
 from torch import nn
 
-from .model_parts import Block, GPTConfig
+from .model_parts import Block, LayerNorm
 
 class DQNConv1D(nn.Module):
     """ DQN model for 1D convolutional input """
@@ -272,4 +272,113 @@ class NanoGPT(nn.Module):
         # Required parameters
         assert config.vocab_size is not None
         assert config.block_size is not None
+        assert config.num_layers is not None
+        assert config.num_heads is not None
+        assert config.num_embd is not None
         self.config = config
+
+        self.transformer = nn.ModuleDict(dict(
+            tkn_embed_tbl = nn.Embedding(config.vocab_size, config.num_embd),
+            pos_embed_tbl = nn.Embedding(config.block_size, config.num_embd),
+            dropout = nn.Dropout(config.dropout),
+            blocks = nn.ModuleList([Block(config) for _ in range(config.num_layers)]),
+            ln_f = LayerNorm(config.num_embd, bias=config.bias),
+        ))
+        self.lm_head = nn.Linear(config.num_embd, config.vocab_size, bias=False)
+
+        # with weight tying https://paperswithcode.com/method/weight-tying
+        self.transformer.tkn_embed_tbl.weight = self.lm_head.weight
+
+        # init all weights
+        self.apply(self._init_weights)
+        # apply special scaled init to the residual projections, per GPT-2 paper
+        for pn, p in self.named_parameters():
+            if pn.endswith('c_proj.weight'):
+                torch.nn.init.normal_(p, mean=0.0, std=0.02/math.sqrt(2 * config.num_layers))
+
+        # report number of parameters
+        print(f"number of parameters: {self.get_num_params() / 1e6:.2f}M")
+
+    def get_num_params(self, non_embedding=True):
+        """
+        Return the number of parameters in the model.
+        For non-embedding count (default), the position embeddings get subtracted.
+        The token embeddings would too, except due to the parameter sharing these
+        params are actually used as weights in the final layer, so we include them.
+        """
+        n_params = sum(p.numel() for p in self.parameters())
+        if non_embedding:
+            n_params -= self.transformer.pos_embed_tbl.weight.numel()
+        return n_params
+
+    def _init_weights(self, module):
+        if isinstance(module, nn.Linear):
+            torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
+            if module.bias is not None:
+                torch.nn.init.zeros_(module.bias)
+        elif isinstance(module, nn.Embedding):
+            torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
+
+    def forward(self, context: torch.tensor, targets: torch.tensor = None):
+        """ Forward pass of the NanoGPT model """
+        device = context.device
+        _, time = context.size()
+
+        # Make sure the context isn't too long
+        assert time <= self.config.block_size, (f"Cannot forward sequence of length {time}, "
+                                                f"block size is only {self.config.block_size}")
+
+        # Get the embeddings for the tokens in the context (batch, time, n_embd)
+        tok_emb = self.transformer.tkn_embed_tbl(context)
+        # Get the embeddings for the positions in the context (batch, time, n_embd)
+        pos = torch.arange(0, time, dtype=torch.long, device=device)
+        pos_emb = self.transformer.pos_embed_tbl(pos)
+
+        # Dropout and pass through the transformer blocks
+        x = self.transformer.dropout(tok_emb + pos_emb)
+        for block in self.transformer.blocks:
+            x = block(x)
+        # Layer normalization
+        x = self.transformer.ln_f(x)
+
+        if targets is not None:
+            # if we are given some desired targets also calculate the loss
+            logits = self.lm_head(x)
+            loss = nn.functional.cross_entropy(logits.view(-1, logits.size(-1)),
+                                               targets.view(-1), ignore_index=-1)
+        else:
+            # Inference: predict the next token based on the last token in the input sequence
+            # note: using list [-1] to preserve the time dim
+            logits = self.lm_head(x[:, [-1], :])
+            loss = None
+
+        return logits, loss
+
+    @torch.no_grad()
+    def generate(self, context, max_new_tokens, temperature=1.0, top_k=None):
+        """
+        Take an input context and generate new tokens. Can use temperature to control
+        the diversity of the generated text and top_k to crop the distribution to the
+        top k options at each step. Both of these will affect the output token distribution.
+        """
+        for _ in range(max_new_tokens):
+            # Get the predictions & remove the time dimension (B, C) - crop to needed size
+            context_crop = context if context.size(1) <= self.config.block_size \
+                                   else context[:, -self.config.block_size:]
+            logits, _ = self(context_crop)
+            # Scale by desired temperature (controls diversity of generated text)
+            logits = logits[:, -1, :] / temperature
+
+            # Optionally crop the logits to only the top k options
+            if top_k is not None:
+                v, _ = torch.topk(logits, min(top_k, logits.size(-1)))
+                logits[logits < v[:, [-1]]] = -float('Inf')
+
+            # Sample the next token from the distribution (B, 1)
+            probs = nn.functional.softmax(logits, dim=-1)
+            next_token = torch.multinomial(probs, num_samples=1)
+
+            # Append the new token to the context
+            context = torch.cat((context, next_token), dim=1)
+
+        return context

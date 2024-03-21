@@ -2,14 +2,18 @@
 """ This script performs training of the nano gpt model """
 # SentencePiece, tiktoken tokenizers
 import argparse
+import time
 
 import torch
 # from torch import nn, device, functional as Func
 # from torch.nn import functional as Func
 
-from ..lib.models import CharacterGPT, GPTConfig
+from ..lib.models import CharacterGPT
+from ..lib.model_parts import GPTConfig
 
-# python3 -m src.char_gpt_model  -p data/tinyshakespear.txt
+# python3 -m src.train.char_gpt_model  -p data/tinyshakespear.txt
+# 1000 iterations: 275.58954334259033 seconds
+# 5000 iterations: 1258.9465391635895 seconds
 
 torch.manual_seed(1337)
 HARDWARE = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -28,6 +32,7 @@ NUM_HEADS = 6        # how many independent attention heads to use?
 DROP_RATE = 0.2      # how much dropout to apply in the model?
 
 if __name__ == "__main__":
+    start_time = time.time()
     # Parse command line arguments
     parser = argparse.ArgumentParser()
     parser.add_argument(      "--cuda", default=False, help="Enable cuda",  action="store_true")
@@ -113,6 +118,11 @@ if __name__ == "__main__":
         optimizer.zero_grad(set_to_none=True)
         loss.backward()
         optimizer.step()
+
+    # Print the execution time
+    end_time = time.time()
+    execution_time = end_time - start_time
+    print("Execution time:", execution_time, "seconds")
 
     # generate from the model
     context = torch.zeros((1, 1), dtype=torch.long, device=HARDWARE)

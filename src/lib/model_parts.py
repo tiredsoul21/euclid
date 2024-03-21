@@ -15,6 +15,21 @@ class GPTConfig:
     dropout: float = 0.0
     bias: bool = True
 
+class LayerNorm(nn.Module):
+    """
+    LayerNorm but with an optional bias.
+    PyTorch doesn't support simply bias=False
+    """
+
+    def __init__(self, ndim, bias):
+        super().__init__()
+        self.weight = nn.Parameter(torch.ones(ndim))
+        self.bias = nn.Parameter(torch.zeros(ndim)) if bias else None
+
+    def forward(self, context):
+        """ Forward pass of Layer Norm """
+        return nn.functional.layer_norm(context, self.weight.shape, self.weight, self.bias, 1e-5)
+
 class Head(nn.Module):
     """ Single head of self-attention """
     def __init__(self, gptConfig):
