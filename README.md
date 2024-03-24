@@ -83,6 +83,28 @@ https://github.com/karpathy/makemore/blob/master/names.txt
 ### Execution
 python3 -m src.char_gpt_model  -p data/tinyshakespear.txt
 
+## Nano GPT Model
+### Notes
+This was primarily derived from: <br>
+https://github.com/karpathy/nanoGPT/tree/master <br>
+and the Githubs repos listed within.  The implementation and model designs are not unique and not owned / created by me.
+### Setup
+```
+# Code snippets
+sudo apt-get install python3-venv
+python3 -m venv ml-env
+source ml-env/bin/activate
+pip3 install numpy==1.26.3            # For data management
+pip3 install torch==2.1.2             # Core models / networks
+pip3 install tiktoken==0.6.0          # Text tokenization
+pip3 install datasets==2.17.1         # For dataset managment
+```
+
+### Dataset
+https://huggingface.co/datasets/Skylion007/openwebtext
+
+### Execution
+python3 -m src.train.nano_gpt_model --init scratch
 
 ## Code Model
 ### Setup
