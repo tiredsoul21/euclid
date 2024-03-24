@@ -1,11 +1,13 @@
 """ Agent models """
 import copy
+import math
+import inspect
+
 import numpy as np
-
 import torch
-import torch.nn as nn
+from torch import nn
 
-from .model_parts import Block
+from .model_parts import OldBlock, Block, LayerNorm
 
 class DQNConv1D(nn.Module):
     """ DQN model for 1D convolutional input """
@@ -203,28 +205,33 @@ class BigramLanguageModel(nn.Module):
 
 class CharacterGPT(nn.Module):
     """ A simple bigram language model """
-    def __init__(self, vocab_size, num_heads, n_embd, n_layers, block_size, dropout=0.0):
+    def __init__(self, gptConfig):
         super().__init__()
-        self.vocab_size = vocab_size
-        self.n_embd = n_embd
-        self.block_size = block_size
-        self.token_embedding_table = nn.Embedding(vocab_size, n_embd)
-        self.position_embedding_table = nn.Embedding(block_size, n_embd)
-        self.blocks = nn.Sequential(*[Block(num_heads, n_embd, block_size, dropout) 
-                                      for _ in range(n_layers)])
-        self.ln_f = nn.LayerNorm(n_embd)
-        self.lm_head = nn.Linear(n_embd, vocab_size)
+        # Assert required parameters
+        assert gptConfig.vocab_size is not None
+        assert gptConfig.num_embd is not None
+        assert gptConfig.block_size is not None
+        assert gptConfig.num_layers is not None
+        self.config = gptConfig
+
+        # Create the token and position embedding tables
+        self.tkn_embed_tbl = nn.Embedding(self.config.vocab_size, self.config.num_embd)
+        self.pos_embed_tbl = nn.Embedding(self.config.block_size, self.config.num_embd)
+
+        self.blocks = nn.Sequential(*[OldBlock(self.config) for _ in range(self.config.num_layers)])
+        self.ln_f = nn.LayerNorm(self.config.num_embd)
+        self.lm_head = nn.Linear(self.config.num_embd, self.config.vocab_size)
 
     def forward(self, context: torch.tensor, target: torch.tensor = None):
         """ 'Forward Pass' -- A table lookup """
         _, time = context.shape
         # Get the embeddings for the tokens in the context (batch, time, n_embd)
-        token_emb = self.token_embedding_table(context)
+        tkn_emb = self.tkn_embed_tbl(context)
         # Get the embeddings for the positions in the context (batch, time, n_embd)
-        position_emb = self.position_embedding_table(torch.arange(time, device=context.device))
+        pos_emb = self.pos_embed_tbl(torch.arange(time, device=context.device))
 
         # Get the logits for the next token (batch, time, vocab_size)
-        x = token_emb + position_emb
+        x = tkn_emb + pos_emb
         x = self.blocks(x)
         x = self.ln_f(x)
         logits = self.lm_head(x)
@@ -245,7 +252,7 @@ class CharacterGPT(nn.Module):
         """ Generate new tokens given a context in the Time dimension """
         for _ in range(max_new_tokens):
             # Get the predictions & remove the time dimension (B, C)
-            context_crop = in_context[:, -self.block_size:]
+            context_crop = in_context[:, -self.config.block_size:]
             logits, _ = self(context_crop)
             logits = logits[:, -1, :]
 
@@ -256,3 +263,168 @@ class CharacterGPT(nn.Module):
             # Append the new token to the context
             in_context = torch.cat((in_context, next_token), dim=1) # (B, T+1)
         return in_context
+
+class NanoGPT(nn.Module):
+    """ NanoGPT model """
+
+    def __init__(self, config):
+        super().__init__()
+
+        # Required parameters
+        assert config.vocab_size is not None
+        assert config.block_size is not None
+        assert config.num_layers is not None
+        assert config.num_heads is not None
+        assert config.num_embd is not None
+        self.config = config
+
+        self.transformer = nn.ModuleDict(dict(
+            tkn_embed_tbl = nn.Embedding(config.vocab_size, config.num_embd),
+            pos_embed_tbl = nn.Embedding(config.block_size, config.num_embd),
+            dropout = nn.Dropout(config.dropout),
+            blocks = nn.ModuleList([Block(config) for _ in range(config.num_layers)]),
+            ln_f = LayerNorm(config.num_embd, bias=config.bias),
+        ))
+        self.lm_head = nn.Linear(config.num_embd, config.vocab_size, bias=False)
+
+        # with weight tying https://paperswithcode.com/method/weight-tying
+        self.transformer.tkn_embed_tbl.weight = self.lm_head.weight
+
+        # init all weights
+        self.apply(self._init_weights)
+        # apply special scaled init to the residual projections, per GPT-2 paper
+        for pn, p in self.named_parameters():
+            if pn.endswith('c_proj.weight'):
+                torch.nn.init.normal_(p, mean=0.0, std=0.02/math.sqrt(2 * config.num_layers))
+
+        # report number of parameters
+        print(f"number of parameters: {self.get_num_params() / 1e6:.2f}M")
+
+    def get_num_params(self, non_embedding=True):
+        """
+        Return the number of parameters in the model.
+        For non-embedding count (default), the position embeddings get subtracted.
+        The token embeddings would too, except due to the parameter sharing these
+        params are actually used as weights in the final layer, so we include them.
+        """
+        n_params = sum(p.numel() for p in self.parameters())
+        if non_embedding:
+            n_params -= self.transformer.pos_embed_tbl.weight.numel()
+        return n_params
+
+    def _init_weights(self, module):
+        if isinstance(module, nn.Linear):
+            torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
+            if module.bias is not None:
+                torch.nn.init.zeros_(module.bias)
+        elif isinstance(module, nn.Embedding):
+            torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
+
+    def forward(self, context: torch.tensor, targets: torch.tensor = None):
+        """ Forward pass of the NanoGPT model """
+        device = context.device
+        _, time = context.size()
+
+        # Make sure the context isn't too long
+        assert time <= self.config.block_size, (f"Cannot forward sequence of length {time}, "
+                                                f"block size is only {self.config.block_size}")
+
+        # Get the embeddings for the tokens in the context (batch, time, n_embd)
+        tok_emb = self.transformer.tkn_embed_tbl(context)
+        # Get the embeddings for the positions in the context (batch, time, n_embd)
+        pos = torch.arange(0, time, dtype=torch.long, device=device)
+        pos_emb = self.transformer.pos_embed_tbl(pos)
+
+        # Dropout and pass through the transformer blocks
+        x = self.transformer.dropout(tok_emb + pos_emb)
+        for block in self.transformer.blocks:
+            x = block(x)
+        # Layer normalization
+        x = self.transformer.ln_f(x)
+
+        if targets is not None:
+            # if we are given some desired targets also calculate the loss
+            logits = self.lm_head(x)
+            loss = nn.functional.cross_entropy(logits.view(-1, logits.size(-1)),
+                                               targets.view(-1), ignore_index=-1)
+        else:
+            # Inference: predict the next token based on the last token in the input sequence
+            # note: using list [-1] to preserve the time dim
+            logits = self.lm_head(x[:, [-1], :])
+            loss = None
+
+        return logits, loss
+
+    @torch.no_grad()
+    def generate(self, context, max_new_tokens, temperature=1.0, top_k=None):
+        """
+        Take an input context and generate new tokens. Can use temperature to control
+        the diversity of the generated text and top_k to crop the distribution to the
+        top k options at each step. Both of these will affect the output token distribution.
+        """
+        for _ in range(max_new_tokens):
+            # Get the predictions & remove the time dimension (B, C) - crop to needed size
+            context_crop = context if context.size(1) <= self.config.block_size \
+                                   else context[:, -self.config.block_size:]
+            logits, _ = self(context_crop)
+            # Scale by desired temperature (controls diversity of generated text)
+            logits = logits[:, -1, :] / temperature
+
+            # Optionally crop the logits to only the top k options
+            if top_k is not None:
+                v, _ = torch.topk(logits, min(top_k, logits.size(-1)))
+                logits[logits < v[:, [-1]]] = -float('Inf')
+
+            # Sample the next token from the distribution (B, 1)
+            probs = nn.functional.softmax(logits, dim=-1)
+            next_token = torch.multinomial(probs, num_samples=1)
+
+            # Append the new token to the context
+            context = torch.cat((context, next_token), dim=1)
+
+        return context
+
+    def configure_optimizers(self, weight_decay, learning_rate, betas, device_type):
+        """ Initialize the AdamW optimizer for training the model """
+        # start with all of the candidate parameters get ones the require grad
+        param_dict = {pn: p for pn, p in self.named_parameters()}
+        param_dict = {pn: p for pn, p in param_dict.items() if p.requires_grad}
+
+        # create optim groups. Any parameters that is 2D will be weight decayed, otherwise no.
+        # i.e. all weight tensors in matmuls + embeddings decay, all biases and layernorms don't.
+        decay_params = [p for _, p in param_dict.items() if p.dim() >= 2]
+        nodecay_params = [p for _, p in param_dict.items() if p.dim() < 2]
+        optim_groups = [
+            {'params': decay_params, 'weight_decay': weight_decay},
+            {'params': nodecay_params, 'weight_decay': 0.0}
+        ]
+
+        num_decay_params = sum(p.numel() for p in decay_params)
+        num_nodecay_params = sum(p.numel() for p in nodecay_params)
+        print(f"num decayed parameter tensors: {len(decay_params)}, with {num_decay_params:,} parameters")
+        print(f"num non-decayed parameter tensors: {len(nodecay_params)}, with {num_nodecay_params:,} parameters")
+
+        # Create AdamW optimizer and use the fused version if it is available
+        fused_available = 'fused' in inspect.signature(torch.optim.AdamW).parameters
+        use_fused = fused_available and device_type == 'cuda'
+        extra_args = dict(fused=True) if use_fused else dict()
+        optimizer = torch.optim.AdamW(optim_groups, lr=learning_rate, betas=betas, **extra_args)
+        print(f"using fused AdamW: {use_fused}")
+
+        return optimizer
+
+    def estimate_mfu(self, fwdbwd_per_iter, dt):
+        """ estimate model flops utilization (MFU) in units of A100 bfloat16 peak FLOPS """
+        # first estimate the number of flops we do per iteration.
+        # see PaLM paper Appendix B as ref: https://arxiv.org/abs/2204.02311
+        N = self.get_num_params()
+        cfg = self.config
+        L, H, Q, T = cfg.num_layers, cfg.num_heads, cfg.num_embd//cfg.num_heads, cfg.block_size
+        flops_per_token = 6*N + 12*L*H*Q*T
+        flops_per_fwdbwd = flops_per_token * T
+        flops_per_iter = flops_per_fwdbwd * fwdbwd_per_iter
+        # express our flops throughput as ratio of A100 bfloat16 peak flops
+        flops_achieved = flops_per_iter * (1.0/dt) # per second
+        flops_promised = 312e12 # A100 GPU bfloat16 peak flops is 312 TFLOPS
+        mfu = flops_achieved / flops_promised
+        return mfu

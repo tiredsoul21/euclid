@@ -2,14 +2,19 @@
 """ This script performs training of the nano gpt model """
 # SentencePiece, tiktoken tokenizers
 import argparse
+import time
 
 import torch
 # from torch import nn, device, functional as Func
 # from torch.nn import functional as Func
 
 from ..lib.models import CharacterGPT
+from ..lib.model_parts import GPTConfig
 
-# python3 -m src.char_gpt_model  -p data/tinyshakespear.txt
+# python3 -m src.train.char_gpt_model  -p data/tinyshakespear.txt
+# 5000 iterations: 1258.9465391635895 seconds
+# 1000 iterations: 275.58954334259033 seconds
+# 1000 iterations: 272.0482552051544 seconds
 
 torch.manual_seed(1337)
 HARDWARE = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -19,7 +24,7 @@ BLOCK_SIZE = 256     # what is the maximum context length for predictions?
 BATCH_SIZE = 64      # how many independent sequences will we process in parallel?
 EVAL_ITERS = 200     # how many iterations to average for loss estimation?
 EVAL_STEPS = 500     # how many evaluation steps to take?
-MAX_STEPS = 5000     # how many iterations to train for?
+MAX_STEPS = 1000     # how many iterations to train for?
 VOCAB_SIZE = 65      # how many unique tokens are in the data?
 N_EMBD = 384         # how many dimensions to use for the token embeddings?
 N_LAYERS = 6         # how many layers to use in the model?
@@ -28,6 +33,7 @@ NUM_HEADS = 6        # how many independent attention heads to use?
 DROP_RATE = 0.2      # how much dropout to apply in the model?
 
 if __name__ == "__main__":
+    start_time = time.time()
     # Parse command line arguments
     parser = argparse.ArgumentParser()
     parser.add_argument(      "--cuda", default=False, help="Enable cuda",  action="store_true")
@@ -65,7 +71,11 @@ if __name__ == "__main__":
     train_data = input_data_tokens[:int(TRAIN_RATIO*data_count)]
     val_data = input_data_tokens[int(TRAIN_RATIO*data_count):]
 
-    model = CharacterGPT(VOCAB_SIZE, NUM_HEADS, N_EMBD, N_LAYERS, BLOCK_SIZE, DROP_RATE)
+    config_args = dict(num_layers=N_LAYERS, num_heads=NUM_HEADS,
+                       num_embd=N_EMBD, block_size=BLOCK_SIZE,
+                       bias=False, vocab_size=VOCAB_SIZE, dropout=DROP_RATE)
+    config = GPTConfig(**config_args)
+    model = CharacterGPT(config)
     model.to(HARDWARE)
     print(f"Number of parameters: {sum(p.numel() for p in model.parameters())}")
 
@@ -109,6 +119,11 @@ if __name__ == "__main__":
         optimizer.zero_grad(set_to_none=True)
         loss.backward()
         optimizer.step()
+
+    # Print the execution time
+    end_time = time.time()
+    execution_time = end_time - start_time
+    print("Execution time:", execution_time, "seconds")
 
     # generate from the model
     context = torch.zeros((1, 1), dtype=torch.long, device=HARDWARE)
