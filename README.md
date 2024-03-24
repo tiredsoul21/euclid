@@ -81,7 +81,9 @@ https://github.com/karpathy/char-rnn/blob/master/data/tinyshakespeare/input.txt
 https://github.com/karpathy/makemore/blob/master/names.txt
 
 ### Execution
+```
 python3 -m src.char_gpt_model  -p data/tinyshakespear.txt
+```
 
 ## Nano GPT Model
 ### Notes
@@ -104,7 +106,24 @@ pip3 install datasets==2.17.1         # For dataset managment
 https://huggingface.co/datasets/Skylion007/openwebtext
 
 ### Execution
-python3 -m src.train.nano_gpt_model --init scratch
+```
+# Help:
+python3 -m src.train.nano_gpt_model --help
+
+# Train model from scratch
+python3 -m src.train.nano_gpt_model
+
+# Evaluate the model only
+python3 -m src.train.nano_gpt_model --eval_only --init resume
+
+# Resume training of an existing model
+# -i Iteration (written into name)
+# -o folder containing model stuffs
+python3 -m src.train.nano_gpt_model --resume_run -o /home/derrick/repo/euclid/trial1 -i 1000
+
+# Query to model
+python3 -m src.train.nano_gpt_model --generate -m /home/derrick/repo/euclid/test/ckpt_1000.pt -q "Where do you live?"
+``
 
 ## Code Model
 ### Setup

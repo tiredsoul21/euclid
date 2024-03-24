@@ -4,6 +4,7 @@ This is the same / similar to the GPT-2 model, but is a smaller version.
 Correlates to: https://github.com/karpathy/nanoGPT
 """
 import os
+import sys
 import time
 import math
 import argparse
@@ -12,6 +13,7 @@ from contextlib import nullcontext
 
 import numpy as np
 import torch
+import tiktoken
 
 from ..lib.models import NanoGPT
 from ..lib.model_parts import GPTConfig
@@ -25,7 +27,6 @@ OUT_DIR = 'out'        # output directory
 LOG_INTERVAL = 10      # how many steps to log metrics
 EVAL_INTERVAL = 1000   # how often to run eval
 EVAL_ITERS = 200       # how many iters to average for loss estimation
-EVAL_ONLY = False      # Script exits right after the first eval?
 ALWAYS_SAVE = True     # Save a checkpoint each eval?
 
 # data
@@ -73,8 +74,6 @@ config = {k: globals()[k] for k in CONFIG_KEYS} # will be useful for logging
 TOKENS_PER_ITER = GRAD_ACCUMULATION_STEPS * BATCH_SIZE * BLOCK_SIZE
 print(f"tokens per iteration will be: {TOKENS_PER_ITER:,}")
 
-os.makedirs(OUT_DIR, exist_ok=True)
-torch.manual_seed(SEED)
 torch.backends.cuda.matmul.allow_tf32 = True # allow tf32 on matmul
 torch.backends.cudnn.allow_tf32 = True # allow tf32 on cudnn
 
@@ -106,12 +105,50 @@ def get_batch(split):
 
     return x, y
 
+enc = tiktoken.get_encoding("gpt2")
+def encode(text_to_tokenize):
+    """ Encode the text with the GPT2 BPE tokenizer """
+    return enc.encode(text_to_tokenize, allowed_special={"<|endoftext|>"})
+
+def decode(tokens):
+    """ Decode the tokens with the GPT2 BPE tokenizer """
+    return enc.decode(tokens)
+
+def process(text_to_tokenize):
+    """ Tokenize the query with the GPT2 BPE tokenizer """
+    start_ids = encode(text_to_tokenize)
+    ids = (torch.tensor(start_ids, dtype=torch.long, device=DEVICE)[None, ...])
+    return ids
+
 if __name__ == "__main__":
     # Parse command line arguments
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-i", "--init", default='scratch', help="From 'scratch'/'resume' training?")
-    parser.add_argument("-c", "--compile", action='store_true', help="Compile the model?")
+    parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter,
+                                     description="GPT Trainer Script")
+    # For compiling the model -- makes it faster, requires PyTorch 2.0
+    parser.add_argument("--compile", action='store_true', help="Compile the model? pytorch 2.0+\n\n")
+    # Parameters for training from a checkpoint
+    parser.add_argument("--resume_run", action='store_true', help="Resume training?")
+    parser.add_argument("-o", "--out_dir", default=OUT_DIR, help="Output directory for model info")
+    parser.add_argument("-i", "--iter", default=0, help="Iteration number to start from\n\n")
+    # For evaluating the model then exiting
+    parser.add_argument("--eval_only", action='store_true', help="Evaluate Model only\n\n")
+    # For generating text from the model
+    parser.add_argument("--generate", action='store_true', help="Generate text from model")
+    parser.add_argument("--gen_len", default=1024, help="Length of text to generate")
+    parser.add_argument("--gen_temp", default=1.0, help="Temperature for generation")
+    parser.add_argument("--gen_topk", default=None, help="Top-k for generation")
+    parser.add_argument("-m", "--model_path", default='', help="Path to model checkpoint")
+    parser.add_argument("-q", "--query", default='', help="Query for text generation")
     args = parser.parse_args()
+
+    # Check if the model path is provided for text generation
+    if args.generate and (args.model_path == '' or args.query == ''):
+        print("Please provide a model checkpoint path for text generation")
+        sys.exit()
+
+    os.makedirs(args.out_dir, exist_ok=True)
+    # Provides reproducibility but avoid same samples for resume_runs
+    torch.manual_seed(SEED + int(args.iter))
 
     # Initial valies may be overwritten by the checkpoint
     iter_num = 0
@@ -131,17 +168,33 @@ if __name__ == "__main__":
                       block_size=BLOCK_SIZE, bias=BIAS, vocab_size=None,
                       dropout=DROPOUT)
 
-    if args.init == 'scratch':
-        # Create a new model from scratch
-        print("Initializing a new model from scratch")
+    if args.generate:
+        # Load the model for text generation
+        print(f"Loading model from {args.model_path} for text generation")
+        ckpt = torch.load(args.model_path, map_location=DEVICE)
+        model_args = ckpt['model_args']
         model_args['vocab_size'] = META_VOCAB_SIZE if META_VOCAB_SIZE is not None else 50304
-        print (f"vocab_size = {model_args['vocab_size']}")
         gptconf = GPTConfig(**model_args)
         model = NanoGPT(gptconf)
-    elif args.init == 'resume':
+        model.load_state_dict(ckpt['model'])
+        model.to(DEVICE)
+        model.eval()
+
+        # Tokenize the query
+        query = process(args.query)
+        print(f"Query: {args.query}")
+        # Generate text from the model
+        with torch.no_grad():
+            with ctx:
+                response = model.generate(query, args.gen_len, args.gen_temp, args.gen_topk)
+        response = response.tolist()
+        print(f"Response: {decode(response[0])}")
+        sys.exit()
+
+    if args.resume_run:
         # Resume training from a checkpoint
-        print(f"Resuming training from {OUT_DIR}")
-        ckpt_path = os.path.join(OUT_DIR, 'ckpt.pt')
+        print(f"Resuming training from {args.out_dir}")
+        ckpt_path = os.path.join(args.out_dir, 'ckpt_' + str(args.iter) + '.pt')
         checkpoint = torch.load(ckpt_path, map_location=DEVICE)
         checkpoint_model_args = checkpoint['model_args']
 
@@ -164,6 +217,14 @@ if __name__ == "__main__":
         iter_num = checkpoint['iter_num']
         best_val_loss = checkpoint['best_val_loss']
 
+    else:
+        # Create a new model from scratch
+        print("Initializing a new model from scratch")
+        model_args['vocab_size'] = META_VOCAB_SIZE if META_VOCAB_SIZE is not None else 50304
+        print (f"vocab_size = {model_args['vocab_size']}")
+        gptconf = GPTConfig(**model_args)
+        model = NanoGPT(gptconf)
+
     # crop down the model block size if desired, using model surgery
     if BLOCK_SIZE < model.config.block_size:
         model.crop_block_size(BLOCK_SIZE)
@@ -175,7 +236,7 @@ if __name__ == "__main__":
 
     # optimizer
     optimizer = model.configure_optimizers(WEIGHT_DECAY, LEARNING_RATE, (BETA1, BETA2), DEVICE)
-    if args.init == 'resume':
+    if args.resume_run != '':
         optimizer.load_state_dict(checkpoint['optimizer'])
     # Clean up memory
     checkpoint = None
@@ -224,6 +285,7 @@ if __name__ == "__main__":
     t0 = time.time()
     local_iter_num = 0
     running_mfu = -1.0
+    first_iter = True
     while True:
         # determine and set the learning rate for this iteration
         lr = get_lr(iter_num) if LR_DECAY else LEARNING_RATE
@@ -237,7 +299,7 @@ if __name__ == "__main__":
 
             if loss['val'] < best_val_loss or ALWAYS_SAVE:
                 best_val_loss = loss['val']
-                if iter_num > 0:
+                if iter_num > 0 and not first_iter:
                     checkpoint = {
                         'model': model.state_dict(),
                         'optimizer': optimizer.state_dict(),
@@ -246,11 +308,14 @@ if __name__ == "__main__":
                         'best_val_loss': best_val_loss,
                         'config': config,
                     }
-                    print(f"saving checkpoint to {OUT_DIR}")
+                    print(f"saving checkpoint to {args.out_dir}")
                     #Save model with iteration number
-                    torch.save(checkpoint, os.path.join(OUT_DIR, 'ckpt_' + str(iter_num) + '.pt'))
+                    torch.save(checkpoint, os.path.join(args.out_dir, 'ckpt_'+str(iter_num)+'.pt'))
+            # Avoid saving the model just loaded
+            first_iter = False
 
-        if iter_num == 0 and EVAL_ONLY:
+        # If we are only evaluating, exit
+        if iter_num == 0 and args.eval_only:
             break
 
         # forward backward update, with optional gradient accumulation to simulate larger batch size
