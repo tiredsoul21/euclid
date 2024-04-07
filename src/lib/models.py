@@ -379,6 +379,10 @@ class NanoGPT(nn.Module):
             probs = nn.functional.softmax(logits, dim=-1)
             next_token = torch.multinomial(probs, num_samples=1)
 
+            if next_token.item() == 50256:
+                # if the next token is the end of text token, stop here
+                break
+
             # Append the new token to the context
             context = torch.cat((context, next_token), dim=1)
 
