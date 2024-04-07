@@ -5,6 +5,8 @@ import argparse
 from torch import device
 from .environment import GeisterEnv
 
+SEED = 42
+
 if __name__ == '__main__':
     # Parse command line arguments
     parser = argparse.ArgumentParser()
@@ -19,4 +21,37 @@ if __name__ == '__main__':
     SAVES_DIR = f"saves/{args.name}"
     os.makedirs(SAVES_DIR, exist_ok=True)
 
-    env = GeisterEnv(seed=0)
+    env = GeisterEnv(seed=SEED)
+    env.reset()
+    # board = env.get_board(1)
+    # print(board)
+    # env.print_board(1)
+    # env.step(((4, 1), (3, 1),1))
+
+    # print("-----------------")
+    # board = env.get_board(1)
+    # env.print_board(1)
+    # print(board)
+    # board = env.get_board(2)
+    # env.print_board(2)
+    # print(board)
+
+    # env.step(((3, 1), (3, 0),1))
+
+    # print("-----------------")
+    # board = env.get_board(1)
+    # env.print_board(1)
+    # print(board)
+    # board = env.get_board(2)
+    # env.print_board(2)
+    # print(board)
+
+    # env.step(((5, 1), (5, 0),1))
+
+    # print("-----------------")
+    # board = env.get_board(1)
+    # env.print_board(1)
+    # print(board)
+    # board = env.get_board(2)
+    # env.print_board(2)
+    # print(board)
