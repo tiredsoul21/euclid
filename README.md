@@ -82,7 +82,7 @@ https://github.com/karpathy/makemore/blob/master/names.txt
 
 ### Execution
 ```
-python3 -m src.char_gpt_model  -p data/tinyshakespear.txt
+python3 -m src.train.char_gpt_model  -p data/tinyshakespear.txt
 ```
 
 ## Nano GPT Model
@@ -112,18 +112,30 @@ python3 -m src.train.nano_gpt_model --help
 
 # Train model from scratch
 python3 -m src.train.nano_gpt_model
+# Runs about 10% faster:
+python3 -m src.train.nano_gpt_model --compile -d /home/derrick/data/openwebtext
 
 # Evaluate the model only
-python3 -m src.train.nano_gpt_model --eval_only --init resume
+python3 -m src.train.nano_gpt_model --eval_only --resume_run -o /home/derrick/repo/euclid/trial1 -i 1000 -d /home/derrick/data/openwebtext
 
 # Resume training of an existing model
 # -i Iteration (written into name)
 # -o folder containing model stuffs
-python3 -m src.train.nano_gpt_model --resume_run -o /home/derrick/repo/euclid/trial1 -i 1000
+python3 -m src.train.nano_gpt_model --resume_run -o /home/derrick/repo/euclid/trial1 -i 1000 -d /home/derrick/data/openwebtext
+# Runs about 10% faster:
+python3 -m src.train.nano_gpt_model --resume_run -o /home/derrick/repo/euclid/trial1 -i 6000 --compile -d /home/derrick/data/openwebtext
 
 # Query to model
-python3 -m src.train.nano_gpt_model --generate -m /home/derrick/repo/euclid/test/ckpt_1000.pt -q "Where do you live?"
+python3 -m src.train.nano_gpt_model --generate -m /home/derrick/repo/euclid/test/ckpt_6000.pt -q "Where do you live?"
 ``
+
+### Runs
+# single dataset
+python3 -m src.train.nano_gpt_model -d /home/derrick/data/openwebtext
+python3 -m src.train.nano_gpt_model --resume_run -o /home/derrick/repo/euclid/trial1 -i 1000 --compile -d /home/derrick/data/openwebtext
+
+# Multiple Datasets
+python3 -m src.train.nano_gpt_model --resume_run -o /home/derrick/repo/euclid/trial1 -i 46000 --compile -d /home/derrick/data/openwebtext,/home/derrick/data/python
 
 ## Code Model
 ### Setup

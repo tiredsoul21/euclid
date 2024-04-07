@@ -31,8 +31,8 @@ ALWAYS_SAVE = True     # Save a checkpoint each eval?
 
 # data
 SEED = 42                           # random seed for reproducibility
-DATASET  = 'openwebtext'            # which dataset to use huggerface/openwebtext
-DATA_DIR = os.path.join('/home/derrick/data/', DATASET) # path to where the data is
+# DATASET  = 'openwebtext'            # which dataset to use huggerface/openwebtext
+# DATA_DIR = os.path.join('/home/derrick/data/', DATASET) # path to where the data is
 GRAD_ACCUMULATION_STEPS = 5 * 8     # used to simulate larger batch sizes
 BATCH_SIZE = 4                      # if GRAD_ACCUMULATION_STEPS > 1, this is micro-batch size
 BLOCK_SIZE = 1024
@@ -81,14 +81,15 @@ torch.backends.cudnn.allow_tf32 = True # allow tf32 on cudnn
 ptdtype = {'float32': torch.float32, 'bfloat16': torch.bfloat16, 'float16': torch.float16}[DTYPE]
 ctx = nullcontext() if DEVICE == 'cpu' else torch.amp.autocast(device_type=DEVICE, dtype=ptdtype)
 
-def get_batch(split):
+def get_batch(split, data_dirs):
     """ Get a batch of data from the dataset """
+    data_dir = np.random.choice(data_dirs)
     # Select dataset by need
     # We recreate np.memmap every batch to avoid a memory leak
     if split == 'train':
-        data = np.memmap(os.path.join(DATA_DIR, 'train.bin'), dtype=np.uint16, mode='r')
+        data = np.memmap(os.path.join(data_dir, 'train.bin'), dtype=np.uint16, mode='r')
     else:
-        data = np.memmap(os.path.join(DATA_DIR, 'val.bin'),   dtype=np.uint16, mode='r')
+        data = np.memmap(os.path.join(data_dir, 'val.bin'),   dtype=np.uint16, mode='r')
 
     # Select a random batch of BLOCK_SIZE tokens
     ix = torch.randint(len(data) - BLOCK_SIZE, (BATCH_SIZE,))
@@ -125,7 +126,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter,
                                      description="GPT Trainer Script")
     # For compiling the model -- makes it faster, requires PyTorch 2.0
-    parser.add_argument("--compile", action='store_true', help="Compile the model? pytorch 2.0+\n\n")
+    parser.add_argument("--compile", action='store_true', help="Compile model? pytorch 2.0+\n\n")
     # Parameters for training from a checkpoint
     parser.add_argument("--resume_run", action='store_true', help="Resume training?")
     parser.add_argument("-o", "--out_dir", default=OUT_DIR, help="Output directory for model info")
@@ -139,7 +140,10 @@ if __name__ == "__main__":
     parser.add_argument("--gen_topk", default=None, help="Top-k for generation")
     parser.add_argument("-m", "--model_path", default='', help="Path to model checkpoint")
     parser.add_argument("-q", "--query", default='', help="Query for text generation")
+    parser.add_argument("-d", "--data_dirs", default='data', help="Directories of binary files (cs)\n\n")
+
     args = parser.parse_args()
+    DATA_DIRS = args.data_dirs.split(',')
 
     # Check if the model path is provided for text generation
     if args.generate and (args.model_path == '' or args.query == ''):
@@ -155,7 +159,7 @@ if __name__ == "__main__":
     best_val_loss = 1e9
 
     # load the metadata if it exists (for efficiency)
-    meta_path = os.path.join(DATA_DIR, 'meta.pkl')
+    meta_path = os.path.join(DATA_DIRS[0], 'meta.pkl')
     META_VOCAB_SIZE = None
     if os.path.exists(meta_path):
         with open(meta_path, 'rb') as f:
@@ -171,12 +175,19 @@ if __name__ == "__main__":
     if args.generate:
         # Load the model for text generation
         print(f"Loading model from {args.model_path} for text generation")
-        ckpt = torch.load(args.model_path, map_location=DEVICE)
-        model_args = ckpt['model_args']
+        checkpoint = torch.load(args.model_path, map_location=DEVICE)
+        model_args = checkpoint['model_args']
         model_args['vocab_size'] = META_VOCAB_SIZE if META_VOCAB_SIZE is not None else 50304
         gptconf = GPTConfig(**model_args)
         model = NanoGPT(gptconf)
-        model.load_state_dict(ckpt['model'])
+
+        state_dict = checkpoint['model']
+        # remove the original prefix from the keys
+        for k,v in list(state_dict.items()):
+            if k.startswith('_orig_mod.'):
+                state_dict[k[len('_orig_mod.'):]] = state_dict.pop(k)
+
+        model.load_state_dict(state_dict)
         model.to(DEVICE)
         model.eval()
 
@@ -186,7 +197,10 @@ if __name__ == "__main__":
         # Generate text from the model
         with torch.no_grad():
             with ctx:
-                response = model.generate(query, args.gen_len, args.gen_temp, args.gen_topk)
+                gen_len_in = int(args.gen_len)
+                gen_temp_in = float(args.gen_temp)
+                gen_topk_in = int(args.gen_topk) if args.gen_topk is not None else None
+                response = model.generate(query, gen_len_in, gen_temp_in, gen_topk_in)
         response = response.tolist()
         print(f"Response: {decode(response[0])}")
         sys.exit()
@@ -236,7 +250,7 @@ if __name__ == "__main__":
 
     # optimizer
     optimizer = model.configure_optimizers(WEIGHT_DECAY, LEARNING_RATE, (BETA1, BETA2), DEVICE)
-    if args.resume_run != '':
+    if args.resume_run:
         optimizer.load_state_dict(checkpoint['optimizer'])
     # Clean up memory
     checkpoint = None
@@ -248,18 +262,18 @@ if __name__ == "__main__":
 
     # helps estimate an arbitrarily accurate loss over either split using many batches
     @torch.no_grad()
-    def estimate_loss():
+    def estimate_loss(data_dir):
         """ Estimate the loss over the multiple iterations """
         out = {}
         model.eval()
         for split in ['train', 'val']:
             est_losses = torch.zeros(EVAL_ITERS)
             for i in range(EVAL_ITERS):
-                context, targets = get_batch(split)
+                context, targets = get_batch(split, [data_dir])
                 with ctx:
                     _, est_loss = model(context, targets)
                 est_losses[i] = est_loss.item()
-            out[split] = est_losses.mean()
+            out[split] = est_losses.mean().item()
         model.train()
         return out
 
@@ -280,7 +294,7 @@ if __name__ == "__main__":
         return LR_MIN + coeff * (LEARNING_RATE - LR_MIN)
 
     # training loop
-    X, Y = get_batch('train') # fetch the very first batch
+    X, Y = get_batch('train', DATA_DIRS) # fetch the very first batch
 
     t0 = time.time()
     local_iter_num = 0
@@ -294,10 +308,16 @@ if __name__ == "__main__":
 
         # evaluate the loss on train/val sets and write checkpoints
         if iter_num % EVAL_INTERVAL == 0:
-            loss = estimate_loss()
-            print(f"step {iter_num}: train loss {loss['train']:.4f}, val loss {loss['val']:.4f}")
-
-            if loss['val'] < best_val_loss or ALWAYS_SAVE:
+            average_loss = { 'train': 0.0, 'val': 0.0}
+            for data_dir in DATA_DIRS:
+                # Evaluate the loss for the training and validation set
+                loss = estimate_loss(data_dir)
+                print(f"data_dir: {data_dir} - step {iter_num}: train loss {loss['train']:.4f}, val loss {loss['val']:.4f}")
+                average_loss['train'] += loss['train']
+                average_loss['val'] += loss['val']
+            average_loss['train'] /= len(DATA_DIRS)
+            
+            if average_loss['val'] < best_val_loss or ALWAYS_SAVE:
                 best_val_loss = loss['val']
                 if iter_num > 0 and not first_iter:
                     checkpoint = {
@@ -325,7 +345,7 @@ if __name__ == "__main__":
                 logits, loss = model(X, Y)
                 loss = loss / GRAD_ACCUMULATION_STEPS
             # immediately async prefetch next batch while model is doing the forward pass on the GPU
-            X, Y = get_batch('train')
+            X, Y = get_batch('train', DATA_DIRS)
             # backward pass, with gradient scaling if training in fp16
             scaler.scale(loss).backward()
         # clip the gradient
