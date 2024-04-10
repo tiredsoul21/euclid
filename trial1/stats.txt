@@ -1,4 +1,4 @@
-(ml-env) 19:52:15T2024-03-23::~/repo/euclid> python3 -m src.train.nano_gpt_model
+(ml-env) 19:52:15T2024-03-23::~/repo/euclid> python3 -m src.nano_gpt.train
 tokens per iteration will be: 163,840
 Initializing a new model from scratch
 vocab_size = 50304
@@ -111,7 +111,7 @@ step 1000: train loss 4.9962, val loss 5.0070
 saving checkpoint to out
 iter 1000: loss 5.0666, time 26550.72ms, mfu 6.90%
 
-(ml-env) 10:14:46T2024-03-24::~/repo/euclid> python3 -m src.train.nano_gpt_model --resume_run -o /home/derrick/repo/euclid/trial1 -i 1000 --compile -d /home/derrick/data/openwebtext
+(ml-env) 10:14:46T2024-03-24::~/repo/euclid> python3 -m src.nano_gpt.train --resume_run -o /home/derrick/repo/euclid/trial1 -i 1000 --compile -d /home/derrick/data/openwebtext
 tokens per iteration will be: 163,840
 Resuming training from /home/derrick/repo/euclid/trial1
 number of parameters: 123.59M
@@ -632,7 +632,7 @@ step 6000: train loss 3.5062, val loss 3.4938
 saving checkpoint to /home/derrick/repo/euclid/trial1
 iter 6000: loss 3.1622, time 22032.28ms, mfu 7.51%
 
-(ml-env) 08:03:13T2024-03-25::~/repo/euclid> python3 -m src.train.nano_gpt_model --resume_run -o /home/derrick/repo/euclid/trial1 -i 6000 --compile -d /home/derrick/data/openwebtext
+(ml-env) 08:03:13T2024-03-25::~/repo/euclid> python3 -m src.nano_gpt.train --resume_run -o /home/derrick/repo/euclid/trial1 -i 6000 --compile -d /home/derrick/data/openwebtext
 tokens per iteration will be: 163,840
 Resuming training from /home/derrick/repo/euclid/trial1
 number of parameters: 123.59M
@@ -947,7 +947,7 @@ iter 8980: loss 3.1395, time 5544.87ms, mfu 8.07%
 iter 8990: loss 3.4832, time 5543.49ms, mfu 8.08%
 step 9000: train loss 3.3862, val loss 3.3946
 saving checkpoint to /home/derrick/repo/euclid/trial1
-(ml-env) 13:03:53T2024-03-25::~/repo/euclid> python3 -m src.train.nano_gpt_model --resume_run -o /home/derrick/repo/euclid/trial1 -i 9000 --compile -d /home/derrick/data/openwebtext
+(ml-env) 13:03:53T2024-03-25::~/repo/euclid> python3 -m src.nano_gpt.train --resume_run -o /home/derrick/repo/euclid/trial1 -i 9000 --compile -d /home/derrick/data/openwebtext
 tokens per iteration will be: 163,840
 Resuming training from /home/derrick/repo/euclid/trial1
 number of parameters: 123.59M
@@ -1568,7 +1568,7 @@ iter 14980: loss 3.4416, time 5517.52ms, mfu 8.13%
 iter 14990: loss 3.4555, time 5517.72ms, mfu 8.13%
 step 15000: train loss 3.2826, val loss 3.3175
 saving checkpoint to /home/derrick/repo/euclid/trial1
-(ml-env) 16:22:55T2024-03-26::~/repo/euclid> python3 -m src.train.nano_gpt_model --resume_run -o /home/derrick/repo/euclid/trial1 -i 15000 --compile -d /home/derrick/data/openwebtext
+(ml-env) 16:22:55T2024-03-26::~/repo/euclid> python3 -m src.nano_gpt.train --resume_run -o /home/derrick/repo/euclid/trial1 -i 15000 --compile -d /home/derrick/data/openwebtext
 tokens per iteration will be: 163,840
 Resuming training from /home/derrick/repo/euclid/trial1
 number of parameters: 123.59M
@@ -1883,7 +1883,7 @@ iter 17980: loss 3.2342, time 5518.12ms, mfu 8.13%
 iter 17990: loss 2.7917, time 5518.03ms, mfu 8.13%
 step 18000: train loss 3.2698, val loss 3.2526
 saving checkpoint to /home/derrick/repo/euclid/trial1
-(ml-env) 08:04:58T2024-03-27::~/repo/euclid> python3 -m src.train.nano_gpt_model --resume_run -o /home/derrick/repo/euclid/trial1 -i 18000 --compile -d /home/derrick/data/openwebtext
+(ml-env) 08:04:58T2024-03-27::~/repo/euclid> python3 -m src.nano_gpt.train --resume_run -o /home/derrick/repo/euclid/trial1 -i 18000 --compile -d /home/derrick/data/openwebtext
 tokens per iteration will be: 163,840
 Resuming training from /home/derrick/repo/euclid/trial1
 number of parameters: 123.59M
@@ -2608,7 +2608,7 @@ step 25000: train loss 3.2391, val loss 3.2476
 saving checkpoint to /home/derrick/repo/euclid/trial1
 iter 25000: loss 3.1929, time 21867.38ms, mfu 7.53%
 
-(ml-env) 07:09:28T2024-03-28::~/repo/euclid> python3 -m src.train.nano_gpt_model --resume_run -o /home/derrick/repo/euclid/trial1 -i 25000 --compile -d /home/derrick/data/openwebtext
+(ml-env) 07:09:28T2024-03-28::~/repo/euclid> python3 -m src.nano_gpt.train --resume_run -o /home/derrick/repo/euclid/trial1 -i 25000 --compile -d /home/derrick/data/openwebtext
 tokens per iteration will be: 163,840
 Resuming training from /home/derrick/repo/euclid/trial1
 number of parameters: 123.59M
@@ -3331,7 +3331,7 @@ iter 31980: loss 3.0577, time 5517.14ms, mfu 8.13%
 iter 31990: loss 3.0775, time 5516.72ms, mfu 8.13%
 step 32000: train loss 3.2145, val loss 3.1954
 saving checkpoint to /home/derrick/repo/euclid/trial1
-(ml-env) 07:27:15T2024-03-29::~/repo/euclid> python3 -m src.train.nano_gpt_model --resume_run -o /home/derrick/repo/euclid/trial1 -i 32000 --compile -d /home/derrick/data/openwebtext
+(ml-env) 07:27:15T2024-03-29::~/repo/euclid> python3 -m src.nano_gpt.train --resume_run -o /home/derrick/repo/euclid/trial1 -i 32000 --compile -d /home/derrick/data/openwebtext
 tokens per iteration will be: 163,840
 Resuming training from /home/derrick/repo/euclid/trial1
 number of parameters: 123.59M
@@ -3646,7 +3646,7 @@ iter 34980: loss 3.5559, time 5517.69ms, mfu 8.13%
 iter 34990: loss 3.1766, time 5535.74ms, mfu 8.13%
 step 35000: train loss 3.2098, val loss 3.1971
 saving checkpoint to /home/derrick/repo/euclid/trial1
-(ml-env) 18:13:12T2024-04-05::~/repo/euclid> python3 -m src.train.nano_gpt_model --resume_run -o /home/derrick/repo/euclid/trial1 -i 35000 --compile -d /home/derrick/data/openwebtext
+(ml-env) 18:13:12T2024-04-05::~/repo/euclid> python3 -m src.nano_gpt.train --resume_run -o /home/derrick/repo/euclid/trial1 -i 35000 --compile -d /home/derrick/data/openwebtext
 tokens per iteration will be: 163,840
 Resuming training from /home/derrick/repo/euclid/trial1
 number of parameters: 123.59M
@@ -3859,7 +3859,7 @@ iter 36980: loss 3.0549, time 5541.31ms, mfu 8.11%
 iter 36990: loss 3.1820, time 5540.92ms, mfu 8.11%
 step 37000: train loss 3.1773, val loss 3.1995
 saving checkpoint to /home/derrick/repo/euclid/trial1
-(ml-env) 22:02:06T2024-04-05::~/repo/euclid> python3 -m src.train.nano_gpt_model --resume_run -o /home/derrick/repo/euclid/trial1 -i 37000 --compile -d /home/derrick/data/openwebtext
+(ml-env) 22:02:06T2024-04-05::~/repo/euclid> python3 -m src.nano_gpt.train --resume_run -o /home/derrick/repo/euclid/trial1 -i 37000 --compile -d /home/derrick/data/openwebtext
 tokens per iteration will be: 163,840
 Resuming training from /home/derrick/repo/euclid/trial1
 number of parameters: 123.59M
@@ -4378,7 +4378,7 @@ iter 41980: loss 2.8557, time 5512.52ms, mfu 8.14%
 iter 41990: loss 3.1697, time 5512.51ms, mfu 8.14%
 step 42000: train loss 3.1725, val loss 3.1826
 saving checkpoint to /home/derrick/repo/euclid/trial1
-(ml-env) 07:45:00T2024-04-06::~/repo/euclid> python3 -m src.train.nano_gpt_model --resume_run -o /home/derrick/repo/euclid/trial1 -i 42000 --compile -d /home/derrick/data/openwebtext
+(ml-env) 07:45:00T2024-04-06::~/repo/euclid> python3 -m src.nano_gpt.train --resume_run -o /home/derrick/repo/euclid/trial1 -i 42000 --compile -d /home/derrick/data/openwebtext
 tokens per iteration will be: 163,840
 Resuming training from /home/derrick/repo/euclid/trial1
 number of parameters: 123.59M
@@ -4795,7 +4795,7 @@ iter 45980: loss 3.3325, time 5838.88ms, mfu 7.95%
 iter 45990: loss 3.1205, time 5837.70ms, mfu 7.93%
 step 46000: train loss 3.1968, val loss 3.2011
 saving checkpoint to /home/derrick/repo/euclid/trial1
-(ml-env) 17:53:51T2024-04-06::~/repo/lovelace> python3 -m src.train.nano_gpt_model --resume_run -o /home/derrick/repo/euclid/trial1 -i 46000 --compile -d /home/derrick/data/openwebtext
+(ml-env) 17:53:51T2024-04-06::~/repo/lovelace> python3 -m src.nano_gpt.train --resume_run -o /home/derrick/repo/euclid/trial1 -i 46000 --compile -d /home/derrick/data/openwebtext
 tokens per iteration will be: 163,840
 Resuming training from /home/derrick/repo/euclid/trial1
 number of parameters: 123.59M
@@ -5008,7 +5008,7 @@ iter 47980: loss 3.2725, time 5514.59ms, mfu 8.14%
 iter 47990: loss 2.9468, time 5512.38ms, mfu 8.14%
 data_dir: /home/derrick/data/openwebtext - step 48000: train loss 3.1996, val loss 3.1884
 saving checkpoint to /home/derrick/repo/euclid/trial1
-(ml-env) 21:23:13T2024-04-06::~/repo/lovelace> python3 -m src.train.nano_gpt_model --resume_run -o /home/derrick/repo/euclid/trial1 -i 48000 --compile -d /home/derrick/data/openwebtext
+(ml-env) 21:23:13T2024-04-06::~/repo/lovelace> python3 -m src.nano_gpt.train --resume_run -o /home/derrick/repo/euclid/trial1 -i 48000 --compile -d /home/derrick/data/openwebtext
 tokens per iteration will be: 163,840
 Resuming training from /home/derrick/repo/euclid/trial1
 number of parameters: 123.59M
@@ -5629,7 +5629,7 @@ iter 53980: loss 3.1768, time 5517.79ms, mfu 8.12%
 iter 53990: loss 3.3191, time 5518.03ms, mfu 8.12%
 data_dir: /home/derrick/data/openwebtext - step 54000: train loss 3.1757, val loss 3.1894
 saving checkpoint to /home/derrick/repo/euclid/trial1
-(ml-env) 06:50:53T2024-04-07::~/repo/lovelace> python3 -m src.train.nano_gpt_model --resume_run -o /home/derrick/repo/euclid/trial1 -i 54000 --compile -d /home/derrick/data/openwebtext
+(ml-env) 06:50:53T2024-04-07::~/repo/lovelace> python3 -m src.nano_gpt.train --resume_run -o /home/derrick/repo/euclid/trial1 -i 54000 --compile -d /home/derrick/data/openwebtext
 tokens per iteration will be: 163,840
 Resuming training from /home/derrick/repo/euclid/trial1
 number of parameters: 123.59M
@@ -5738,5 +5738,942 @@ iter 54960: loss 2.9128, time 5758.95ms, mfu 7.97%
 iter 54970: loss 3.1156, time 5620.04ms, mfu 7.97%
 iter 54980: loss 3.0254, time 5701.22ms, mfu 7.96%
 iter 54990: loss 3.3249, time 5565.53ms, mfu 7.97%
-data_dir: /home/derrick/data/openwebtext - step 55000: train loss 3.1670, val loss 3.1594 <<<
+data_dir: /home/derrick/data/openwebtext - step 55000: train loss 3.1670, val loss 3.1594
 saving checkpoint to /home/derrick/repo/euclid/trial1
+(ml-env) 11:11:14T2024-04-08::~/repo/euclid> python3 -m src.nano_gpt.train --resume_run -o /home/derrick/repo/euclid/trial1 -i 55000 --compile -d /home/derrick/data/openwebtext
+tokens per iteration will be: 163,840
+Resuming training from /home/derrick/repo/euclid/trial1
+number of parameters: 123.59M
+num decayed parameter tensors: 50, with 124,354,560 parameters
+num non-decayed parameter tensors: 25, with 19,200 parameters
+using fused AdamW: True
+compiling the model...
+data_dir: /home/derrick/data/openwebtext - step 55000: train loss 3.1839, val loss 3.1785
+iter 55000: loss 3.0029, time 34261.78ms, mfu -100.00%
+iter 55010: loss 2.8151, time 5525.64ms, mfu 8.12%
+iter 55020: loss 3.1807, time 5524.29ms, mfu 8.12%
+iter 55030: loss 2.8093, time 5523.91ms, mfu 8.12%
+iter 55040: loss 3.2985, time 5524.19ms, mfu 8.12%
+iter 55050: loss 3.2065, time 5524.08ms, mfu 8.12%
+iter 55060: loss 2.9733, time 5524.36ms, mfu 8.12%
+iter 55070: loss 3.2744, time 5524.63ms, mfu 8.12%
+iter 55080: loss 2.9788, time 5524.60ms, mfu 8.12%
+iter 55090: loss 3.0055, time 5524.91ms, mfu 8.12%
+iter 55100: loss 3.3688, time 5524.45ms, mfu 8.12%
+iter 55110: loss 2.9641, time 5525.48ms, mfu 8.12%
+iter 55120: loss 2.9235, time 5528.10ms, mfu 8.12%
+iter 55130: loss 3.2241, time 5524.02ms, mfu 8.12%
+iter 55140: loss 3.3565, time 5524.56ms, mfu 8.12%
+iter 55150: loss 3.0302, time 5526.26ms, mfu 8.12%
+iter 55160: loss 3.0779, time 5512.25ms, mfu 8.13%
+iter 55170: loss 3.1515, time 5512.26ms, mfu 8.13%
+iter 55180: loss 2.8577, time 5512.22ms, mfu 8.13%
+iter 55190: loss 2.8655, time 5512.25ms, mfu 8.13%
+iter 55200: loss 3.1924, time 5512.37ms, mfu 8.13%
+iter 55210: loss 3.0634, time 5512.10ms, mfu 8.13%
+iter 55220: loss 3.3069, time 5511.93ms, mfu 8.13%
+iter 55230: loss 2.9617, time 5512.29ms, mfu 8.13%
+iter 55240: loss 3.1365, time 5523.76ms, mfu 8.13%
+iter 55250: loss 3.1124, time 5511.87ms, mfu 8.13%
+iter 55260: loss 2.9254, time 5512.34ms, mfu 8.14%
+iter 55270: loss 3.3972, time 5512.17ms, mfu 8.14%
+iter 55280: loss 3.1293, time 5511.97ms, mfu 8.14%
+iter 55290: loss 3.4682, time 5511.96ms, mfu 8.14%
+iter 55300: loss 3.1173, time 5512.11ms, mfu 8.14%
+iter 55310: loss 3.1665, time 5512.28ms, mfu 8.14%
+iter 55320: loss 3.2239, time 5512.23ms, mfu 8.14%
+iter 55330: loss 3.3227, time 5512.11ms, mfu 8.14%
+iter 55340: loss 3.0048, time 5512.15ms, mfu 8.14%
+iter 55350: loss 3.0137, time 5512.40ms, mfu 8.14%
+iter 55360: loss 3.0966, time 5514.41ms, mfu 8.14%
+iter 55370: loss 3.2054, time 5512.12ms, mfu 8.14%
+iter 55380: loss 3.1938, time 5512.13ms, mfu 8.14%
+iter 55390: loss 3.4333, time 5511.98ms, mfu 8.14%
+iter 55400: loss 3.2994, time 5512.17ms, mfu 8.14%
+iter 55410: loss 3.3582, time 5512.35ms, mfu 8.14%
+iter 55420: loss 3.3587, time 5511.93ms, mfu 8.14%
+iter 55430: loss 3.2366, time 5512.26ms, mfu 8.14%
+iter 55440: loss 3.0691, time 5512.19ms, mfu 8.14%
+iter 55450: loss 3.3930, time 5512.11ms, mfu 8.14%
+iter 55460: loss 3.0381, time 5512.24ms, mfu 8.14%
+iter 55470: loss 3.2315, time 5512.03ms, mfu 8.14%
+iter 55480: loss 3.0139, time 5513.42ms, mfu 8.14%
+iter 55490: loss 3.1281, time 5511.94ms, mfu 8.14%
+iter 55500: loss 3.0934, time 5512.43ms, mfu 8.14%
+iter 55510: loss 3.3835, time 5517.70ms, mfu 8.14%
+iter 55520: loss 3.2358, time 5512.35ms, mfu 8.14%
+iter 55530: loss 3.1138, time 5512.04ms, mfu 8.14%
+iter 55540: loss 3.2948, time 5512.07ms, mfu 8.14%
+iter 55550: loss 3.3254, time 5511.97ms, mfu 8.14%
+iter 55560: loss 2.8847, time 5511.70ms, mfu 8.14%
+iter 55570: loss 3.4699, time 5512.06ms, mfu 8.14%
+iter 55580: loss 3.1168, time 5512.06ms, mfu 8.14%
+iter 55590: loss 3.2789, time 5511.96ms, mfu 8.14%
+iter 55600: loss 3.2656, time 5512.31ms, mfu 8.14%
+iter 55610: loss 3.2200, time 5514.23ms, mfu 8.14%
+iter 55620: loss 3.3258, time 5511.99ms, mfu 8.14%
+iter 55630: loss 3.2022, time 5511.98ms, mfu 8.14%
+iter 55640: loss 3.2933, time 5512.09ms, mfu 8.14%
+iter 55650: loss 3.0681, time 5512.02ms, mfu 8.14%
+iter 55660: loss 3.0241, time 5512.00ms, mfu 8.14%
+iter 55670: loss 2.7764, time 5511.93ms, mfu 8.14%
+iter 55680: loss 3.3106, time 5511.85ms, mfu 8.14%
+iter 55690: loss 3.2913, time 5512.08ms, mfu 8.14%
+iter 55700: loss 3.2857, time 5511.61ms, mfu 8.14%
+iter 55710: loss 3.0335, time 5511.88ms, mfu 8.14%
+iter 55720: loss 3.1026, time 5511.85ms, mfu 8.14%
+iter 55730: loss 3.3934, time 5513.84ms, mfu 8.14%
+iter 55740: loss 3.0060, time 5512.17ms, mfu 8.14%
+iter 55750: loss 3.0918, time 5512.07ms, mfu 8.14%
+iter 55760: loss 3.0708, time 5512.24ms, mfu 8.14%
+iter 55770: loss 3.2151, time 5511.79ms, mfu 8.14%
+iter 55780: loss 3.0428, time 5511.99ms, mfu 8.14%
+iter 55790: loss 2.9731, time 5512.07ms, mfu 8.14%
+iter 55800: loss 3.2202, time 5512.15ms, mfu 8.14%
+iter 55810: loss 3.0160, time 5512.17ms, mfu 8.14%
+iter 55820: loss 3.2794, time 5512.03ms, mfu 8.14%
+iter 55830: loss 3.1275, time 5512.07ms, mfu 8.14%
+iter 55840: loss 3.2444, time 5512.06ms, mfu 8.14%
+iter 55850: loss 3.1035, time 5514.25ms, mfu 8.14%
+iter 55860: loss 3.1176, time 5515.83ms, mfu 8.14%
+iter 55870: loss 3.2386, time 5511.81ms, mfu 8.14%
+iter 55880: loss 3.2120, time 5512.17ms, mfu 8.14%
+iter 55890: loss 3.2540, time 5512.12ms, mfu 8.14%
+iter 55900: loss 3.0985, time 5511.94ms, mfu 8.14%
+iter 55910: loss 2.9887, time 5511.79ms, mfu 8.14%
+iter 55920: loss 3.1366, time 5512.07ms, mfu 8.14%
+iter 55930: loss 3.2371, time 5512.18ms, mfu 8.14%
+iter 55940: loss 3.1814, time 5512.02ms, mfu 8.14%
+iter 55950: loss 2.9881, time 5512.19ms, mfu 8.14%
+iter 55960: loss 3.1356, time 5511.95ms, mfu 8.14%
+iter 55970: loss 3.2440, time 5512.11ms, mfu 8.14%
+iter 55980: loss 3.0168, time 5513.96ms, mfu 8.14%
+iter 55990: loss 3.4246, time 5512.01ms, mfu 8.14%
+data_dir: /home/derrick/data/openwebtext - step 56000: train loss 3.1379, val loss 3.1760
+saving checkpoint to /home/derrick/repo/euclid/trial1
+iter 56000: loss 3.2227, time 21878.75ms, mfu 7.53%
+iter 56010: loss 3.2855, time 5513.61ms, mfu 7.59%
+iter 56020: loss 2.8784, time 5512.14ms, mfu 7.65%
+iter 56030: loss 3.0951, time 5511.94ms, mfu 7.70%
+iter 56040: loss 3.3863, time 5512.00ms, mfu 7.74%
+iter 56050: loss 3.3028, time 5511.77ms, mfu 7.78%
+iter 56060: loss 3.2317, time 5511.83ms, mfu 7.82%
+iter 56070: loss 3.0137, time 5511.65ms, mfu 7.85%
+iter 56080: loss 2.9025, time 5511.31ms, mfu 7.88%
+iter 56090: loss 3.0439, time 5511.90ms, mfu 7.91%
+iter 56100: loss 3.2226, time 5512.04ms, mfu 7.93%
+iter 56110: loss 3.0892, time 5511.47ms, mfu 7.95%
+iter 56120: loss 3.3412, time 5511.97ms, mfu 7.97%
+iter 56130: loss 3.1485, time 5514.29ms, mfu 7.99%
+iter 56140: loss 3.0411, time 5511.62ms, mfu 8.00%
+iter 56150: loss 3.2558, time 5511.92ms, mfu 8.02%
+iter 56160: loss 3.1792, time 5513.41ms, mfu 8.03%
+iter 56170: loss 2.8283, time 5512.13ms, mfu 8.04%
+iter 56180: loss 2.9980, time 5512.06ms, mfu 8.05%
+iter 56190: loss 3.1820, time 5512.14ms, mfu 8.06%
+iter 56200: loss 2.9554, time 5511.96ms, mfu 8.07%
+iter 56210: loss 3.0978, time 5511.96ms, mfu 8.08%
+iter 56220: loss 3.1123, time 5511.96ms, mfu 8.08%
+iter 56230: loss 3.1229, time 5511.87ms, mfu 8.09%
+iter 56240: loss 3.3077, time 5511.93ms, mfu 8.09%
+iter 56250: loss 2.4709, time 5514.18ms, mfu 8.10%
+iter 56260: loss 3.1769, time 5513.56ms, mfu 8.10%
+iter 56270: loss 2.9968, time 5512.42ms, mfu 8.11%
+iter 56280: loss 3.2327, time 5511.63ms, mfu 8.11%
+iter 56290: loss 3.1300, time 5512.23ms, mfu 8.11%
+iter 56300: loss 3.1081, time 5512.00ms, mfu 8.12%
+iter 56310: loss 3.2169, time 5512.10ms, mfu 8.12%
+iter 56320: loss 2.8113, time 5512.02ms, mfu 8.12%
+iter 56330: loss 2.9810, time 5512.16ms, mfu 8.12%
+iter 56340: loss 3.4771, time 5512.17ms, mfu 8.13%
+iter 56350: loss 3.2283, time 5511.90ms, mfu 8.13%
+iter 56360: loss 3.1627, time 5512.12ms, mfu 8.13%
+iter 56370: loss 3.2287, time 5511.76ms, mfu 8.13%
+iter 56380: loss 3.0101, time 5513.97ms, mfu 8.13%
+iter 56390: loss 3.1526, time 5511.66ms, mfu 8.13%
+iter 56400: loss 3.0532, time 5511.95ms, mfu 8.13%
+iter 56410: loss 3.2030, time 5511.60ms, mfu 8.14%
+iter 56420: loss 3.1077, time 5511.77ms, mfu 8.14%
+iter 56430: loss 3.3887, time 5511.92ms, mfu 8.14%
+iter 56440: loss 3.0817, time 5511.86ms, mfu 8.14%
+iter 56450: loss 3.2559, time 5511.79ms, mfu 8.14%
+iter 56460: loss 3.3623, time 5512.19ms, mfu 8.14%
+iter 56470: loss 3.3708, time 5512.06ms, mfu 8.14%
+iter 56480: loss 3.1311, time 5512.12ms, mfu 8.14%
+iter 56490: loss 2.8950, time 5512.16ms, mfu 8.14%
+iter 56500: loss 3.3103, time 5514.10ms, mfu 8.14%
+iter 56510: loss 2.9750, time 5512.15ms, mfu 8.14%
+iter 56520: loss 3.2780, time 5512.00ms, mfu 8.14%
+iter 56530: loss 3.0529, time 5511.68ms, mfu 8.14%
+iter 56540: loss 2.8764, time 5511.97ms, mfu 8.14%
+iter 56550: loss 3.1652, time 5511.74ms, mfu 8.14%
+iter 56560: loss 2.9905, time 5511.63ms, mfu 8.14%
+iter 56570: loss 3.2304, time 5511.71ms, mfu 8.14%
+iter 56580: loss 3.1371, time 5511.98ms, mfu 8.14%
+iter 56590: loss 3.2829, time 5511.77ms, mfu 8.14%
+iter 56600: loss 2.7262, time 5511.98ms, mfu 8.14%
+iter 56610: loss 3.2315, time 5512.13ms, mfu 8.14%
+iter 56620: loss 3.3592, time 5513.80ms, mfu 8.14%
+iter 56630: loss 3.0337, time 5513.62ms, mfu 8.14%
+iter 56640: loss 2.9453, time 5512.13ms, mfu 8.14%
+iter 56650: loss 3.1337, time 5514.57ms, mfu 8.14%
+iter 56660: loss 3.3651, time 5512.09ms, mfu 8.14%
+iter 56670: loss 3.0200, time 5512.07ms, mfu 8.14%
+iter 56680: loss 3.0375, time 5512.22ms, mfu 8.14%
+iter 56690: loss 3.0660, time 5511.86ms, mfu 8.14%
+iter 56700: loss 3.1719, time 5511.76ms, mfu 8.14%
+iter 56710: loss 3.3653, time 5511.74ms, mfu 8.14%
+iter 56720: loss 3.3491, time 5511.75ms, mfu 8.14%
+iter 56730: loss 3.2163, time 5511.71ms, mfu 8.14%
+iter 56740: loss 3.2264, time 5512.10ms, mfu 8.14%
+iter 56750: loss 3.2350, time 5513.60ms, mfu 8.14%
+iter 56760: loss 3.3715, time 5512.16ms, mfu 8.14%
+iter 56770: loss 3.2339, time 5512.10ms, mfu 8.14%
+iter 56780: loss 3.2451, time 5511.94ms, mfu 8.14%
+iter 56790: loss 2.9062, time 5511.98ms, mfu 8.14%
+iter 56800: loss 3.0182, time 5511.88ms, mfu 8.14%
+iter 56810: loss 3.0819, time 5511.77ms, mfu 8.14%
+iter 56820: loss 2.8841, time 5511.55ms, mfu 8.14%
+iter 56830: loss 3.4128, time 5511.82ms, mfu 8.14%
+iter 56840: loss 3.3140, time 5511.52ms, mfu 8.14%
+iter 56850: loss 3.4011, time 5512.05ms, mfu 8.14%
+iter 56860: loss 3.4570, time 5511.78ms, mfu 8.14%
+iter 56870: loss 3.0542, time 5514.07ms, mfu 8.14%
+iter 56880: loss 3.1731, time 5512.14ms, mfu 8.14%
+iter 56890: loss 3.3267, time 5511.80ms, mfu 8.14%
+iter 56900: loss 3.3510, time 5511.69ms, mfu 8.14%
+iter 56910: loss 3.1047, time 5512.14ms, mfu 8.14%
+iter 56920: loss 3.4389, time 5512.14ms, mfu 8.14%
+iter 56930: loss 3.0774, time 5512.16ms, mfu 8.14%
+iter 56940: loss 3.1583, time 5512.18ms, mfu 8.14%
+iter 56950: loss 3.1726, time 5511.89ms, mfu 8.14%
+iter 56960: loss 3.2543, time 5512.00ms, mfu 8.14%
+iter 56970: loss 3.3592, time 5512.00ms, mfu 8.14%
+iter 56980: loss 2.7708, time 5512.08ms, mfu 8.14%
+iter 56990: loss 3.2235, time 5514.20ms, mfu 8.14%
+data_dir: /home/derrick/data/openwebtext - step 57000: train loss 3.1430, val loss 3.1443 <<<
+saving checkpoint to /home/derrick/repo/euclid/trial1
+iter 57000: loss 3.0828, time 21875.88ms, mfu 7.53%
+iter 57010: loss 3.0806, time 5512.34ms, mfu 7.59%
+iter 57020: loss 3.0430, time 5512.18ms, mfu 7.65%
+iter 57030: loss 3.1377, time 5513.97ms, mfu 7.70%
+iter 57040: loss 3.8316, time 5512.20ms, mfu 7.74%
+iter 57050: loss 3.1907, time 5512.17ms, mfu 7.78%
+iter 57060: loss 3.1644, time 5512.00ms, mfu 7.82%
+iter 57070: loss 3.2142, time 5512.46ms, mfu 7.85%
+iter 57080: loss 3.0389, time 5512.08ms, mfu 7.88%
+iter 57090: loss 3.0049, time 5511.96ms, mfu 7.91%
+iter 57100: loss 3.3126, time 5512.18ms, mfu 7.93%
+iter 57110: loss 3.4943, time 5511.70ms, mfu 7.95%
+iter 57120: loss 2.8277, time 5512.20ms, mfu 7.97%
+iter 57130: loss 2.8284, time 5512.34ms, mfu 7.99%
+iter 57140: loss 3.3446, time 5511.89ms, mfu 8.00%
+iter 57150: loss 3.1966, time 5513.94ms, mfu 8.02%
+iter 57160: loss 3.3275, time 5512.19ms, mfu 8.03%
+iter 57170: loss 3.1041, time 5512.31ms, mfu 8.04%
+iter 57180: loss 2.9761, time 5512.19ms, mfu 8.05%
+iter 57190: loss 3.2860, time 5512.23ms, mfu 8.06%
+iter 57200: loss 3.4438, time 5511.95ms, mfu 8.07%
+iter 57210: loss 3.2051, time 5512.09ms, mfu 8.08%
+iter 57220: loss 3.2077, time 5512.44ms, mfu 8.08%
+iter 57230: loss 3.3032, time 5512.20ms, mfu 8.09%
+iter 57240: loss 3.3318, time 5511.90ms, mfu 8.09%
+iter 57250: loss 2.9338, time 5512.04ms, mfu 8.10%
+iter 57260: loss 3.2769, time 5512.36ms, mfu 8.10%
+iter 57270: loss 3.4549, time 5514.61ms, mfu 8.11%
+iter 57280: loss 3.2905, time 5512.13ms, mfu 8.11%
+iter 57290: loss 3.2697, time 5512.35ms, mfu 8.11%
+iter 57300: loss 3.2763, time 5512.24ms, mfu 8.12%
+iter 57310: loss 3.1523, time 5512.41ms, mfu 8.12%
+iter 57320: loss 3.4687, time 5512.29ms, mfu 8.12%
+iter 57330: loss 3.2613, time 5512.32ms, mfu 8.12%
+iter 57340: loss 2.9447, time 5512.38ms, mfu 8.13%
+iter 57350: loss 3.3465, time 5512.35ms, mfu 8.13%
+iter 57360: loss 3.3676, time 5512.23ms, mfu 8.13%
+iter 57370: loss 3.3151, time 5512.44ms, mfu 8.13%
+iter 57380: loss 2.9614, time 5512.18ms, mfu 8.13%
+iter 57390: loss 3.1323, time 5511.74ms, mfu 8.13%
+iter 57400: loss 3.4274, time 5514.34ms, mfu 8.13%
+iter 57410: loss 2.9817, time 5512.13ms, mfu 8.13%
+iter 57420: loss 3.2891, time 5512.02ms, mfu 8.14%
+iter 57430: loss 3.0327, time 5512.42ms, mfu 8.14%
+iter 57440: loss 3.2993, time 5512.01ms, mfu 8.14%
+iter 57450: loss 3.1912, time 5512.10ms, mfu 8.14%
+iter 57460: loss 3.1877, time 5512.43ms, mfu 8.14%
+iter 57470: loss 3.4005, time 5512.03ms, mfu 8.14%
+iter 57480: loss 3.1477, time 5512.00ms, mfu 8.14%
+iter 57490: loss 3.4592, time 5512.23ms, mfu 8.14%
+iter 57500: loss 3.0069, time 5512.08ms, mfu 8.14%
+iter 57510: loss 2.9929, time 5512.14ms, mfu 8.14%
+iter 57520: loss 3.2617, time 5513.61ms, mfu 8.14%
+iter 57530: loss 3.1793, time 5512.40ms, mfu 8.14%
+iter 57540: loss 3.0903, time 5512.29ms, mfu 8.14%
+iter 57550: loss 2.9392, time 5512.19ms, mfu 8.14%
+iter 57560: loss 2.6577, time 5511.84ms, mfu 8.14%
+iter 57570: loss 3.0067, time 5512.06ms, mfu 8.14%
+iter 57580: loss 3.2626, time 5512.28ms, mfu 8.14%
+iter 57590: loss 3.4095, time 5512.15ms, mfu 8.14%
+iter 57600: loss 2.8104, time 5511.95ms, mfu 8.14%
+iter 57610: loss 3.1196, time 5512.16ms, mfu 8.14%
+iter 57620: loss 2.7160, time 5512.00ms, mfu 8.14%
+iter 57630: loss 3.1895, time 5511.97ms, mfu 8.14%
+iter 57640: loss 3.2362, time 5514.22ms, mfu 8.14%
+iter 57650: loss 3.1957, time 5512.07ms, mfu 8.14%
+iter 57660: loss 2.9973, time 5512.03ms, mfu 8.14%
+iter 57670: loss 3.2546, time 5512.31ms, mfu 8.14%
+iter 57680: loss 2.6982, time 5511.92ms, mfu 8.14%
+iter 57690: loss 2.9926, time 5512.17ms, mfu 8.14%
+iter 57700: loss 2.9743, time 5512.17ms, mfu 8.14%
+iter 57710: loss 2.9646, time 5511.91ms, mfu 8.14%
+iter 57720: loss 3.2474, time 5512.12ms, mfu 8.14%
+iter 57730: loss 3.1343, time 5511.92ms, mfu 8.14%
+iter 57740: loss 3.1978, time 5512.13ms, mfu 8.14%
+iter 57750: loss 3.1975, time 5512.14ms, mfu 8.14%
+iter 57760: loss 2.9678, time 5512.20ms, mfu 8.14%
+iter 57770: loss 3.0404, time 5514.49ms, mfu 8.14%
+iter 57780: loss 3.2648, time 5512.15ms, mfu 8.14%
+iter 57790: loss 3.2454, time 5512.30ms, mfu 8.14%
+iter 57800: loss 3.1843, time 5512.22ms, mfu 8.14%
+iter 57810: loss 3.0296, time 5512.20ms, mfu 8.14%
+iter 57820: loss 3.2888, time 5512.55ms, mfu 8.14%
+iter 57830: loss 3.0934, time 5512.05ms, mfu 8.14%
+iter 57840: loss 3.0672, time 5511.92ms, mfu 8.14%
+iter 57850: loss 3.1487, time 5512.47ms, mfu 8.14%
+iter 57860: loss 3.2678, time 5512.08ms, mfu 8.14%
+iter 57870: loss 3.2761, time 5512.00ms, mfu 8.14%
+iter 57880: loss 3.3785, time 5512.61ms, mfu 8.14%
+iter 57890: loss 3.2656, time 5514.03ms, mfu 8.14%
+iter 57900: loss 3.2357, time 5511.73ms, mfu 8.14%
+iter 57910: loss 3.0147, time 5512.41ms, mfu 8.14%
+iter 57920: loss 3.2881, time 5512.35ms, mfu 8.14%
+iter 57930: loss 2.8343, time 5512.40ms, mfu 8.14%
+iter 57940: loss 2.8874, time 5512.35ms, mfu 8.14%
+iter 57950: loss 3.0977, time 5512.39ms, mfu 8.14%
+iter 57960: loss 3.0751, time 5512.07ms, mfu 8.14%
+iter 57970: loss 3.5924, time 5512.35ms, mfu 8.14%
+iter 57980: loss 3.2146, time 5512.05ms, mfu 8.14%
+iter 57990: loss 2.9708, time 5512.41ms, mfu 8.14%
+data_dir: /home/derrick/data/openwebtext - step 58000: train loss 3.1706, val loss 3.1664
+saving checkpoint to /home/derrick/repo/euclid/trial1
+(ml-env) 21:11:39T2024-04-09::~/repo/euclid> python3 -m src.nano_gpt.train --resume_run -o /home/derrick/repo/euclid/trial1 -i 58000 --compile -d /home/derrick/data/openwebtext
+tokens per iteration will be: 163,840
+Resuming training from /home/derrick/repo/euclid/trial1
+number of parameters: 123.59M
+num decayed parameter tensors: 50, with 124,354,560 parameters
+num non-decayed parameter tensors: 25, with 19,200 parameters
+using fused AdamW: True
+compiling the model...
+data_dir: /home/derrick/data/openwebtext - step 58000: train loss 3.1607, val loss 3.1763
+iter 58000: loss 3.0508, time 34637.75ms, mfu -100.00%
+iter 58010: loss 3.1205, time 5522.19ms, mfu 8.13%
+iter 58020: loss 2.9582, time 5521.89ms, mfu 8.13%
+iter 58030: loss 3.3357, time 5522.23ms, mfu 8.13%
+iter 58040: loss 3.2167, time 5522.31ms, mfu 8.13%
+iter 58050: loss 3.2369, time 5522.21ms, mfu 8.13%
+iter 58060: loss 2.9682, time 5523.19ms, mfu 8.13%
+iter 58070: loss 3.1006, time 5522.12ms, mfu 8.13%
+iter 58080: loss 3.0535, time 5523.09ms, mfu 8.13%
+iter 58090: loss 3.1578, time 5522.55ms, mfu 8.13%
+iter 58100: loss 3.1648, time 5522.25ms, mfu 8.13%
+iter 58110: loss 3.3831, time 5522.47ms, mfu 8.13%
+iter 58120: loss 3.3533, time 5522.05ms, mfu 8.13%
+iter 58130: loss 3.3914, time 5522.50ms, mfu 8.13%
+iter 58140: loss 3.0854, time 5522.32ms, mfu 8.13%
+iter 58150: loss 2.7962, time 5522.36ms, mfu 8.13%
+iter 58160: loss 3.3243, time 5744.66ms, mfu 8.10%
+iter 58170: loss 3.0700, time 5512.18ms, mfu 8.10%
+iter 58180: loss 3.1868, time 5512.61ms, mfu 8.11%
+iter 58190: loss 3.0944, time 5512.50ms, mfu 8.11%
+iter 58200: loss 3.1775, time 5512.44ms, mfu 8.11%
+iter 58210: loss 3.3847, time 5513.31ms, mfu 8.12%
+iter 58220: loss 3.0613, time 5512.65ms, mfu 8.12%
+iter 58230: loss 3.2120, time 5512.40ms, mfu 8.12%
+iter 58240: loss 2.9264, time 5512.51ms, mfu 8.12%
+iter 58250: loss 2.8950, time 5512.43ms, mfu 8.12%
+iter 58260: loss 3.1971, time 5512.33ms, mfu 8.13%
+iter 58270: loss 3.2325, time 5512.50ms, mfu 8.13%
+iter 58280: loss 3.2356, time 5512.13ms, mfu 8.13%
+iter 58290: loss 3.1025, time 5512.69ms, mfu 8.13%
+iter 58300: loss 3.0321, time 5512.35ms, mfu 8.13%
+iter 58310: loss 3.1741, time 5511.96ms, mfu 8.13%
+iter 58320: loss 3.2042, time 5512.37ms, mfu 8.13%
+iter 58330: loss 3.0473, time 5514.10ms, mfu 8.13%
+iter 58340: loss 3.0941, time 5512.48ms, mfu 8.14%
+iter 58350: loss 3.2704, time 5512.20ms, mfu 8.14%
+iter 58360: loss 3.0289, time 5512.12ms, mfu 8.14%
+iter 58370: loss 2.9270, time 5512.02ms, mfu 8.14%
+iter 58380: loss 3.2502, time 5512.23ms, mfu 8.14%
+iter 58390: loss 2.9499, time 5512.27ms, mfu 8.14%
+iter 58400: loss 3.2759, time 5512.48ms, mfu 8.14%
+iter 58410: loss 3.4324, time 5512.42ms, mfu 8.14%
+iter 58420: loss 3.2495, time 5511.96ms, mfu 8.14%
+iter 58430: loss 3.1962, time 5511.94ms, mfu 8.14%
+iter 58440: loss 2.7947, time 5512.39ms, mfu 8.14%
+iter 58450: loss 3.4575, time 5513.99ms, mfu 8.14%
+iter 58460: loss 3.2236, time 5514.36ms, mfu 8.14%
+iter 58470: loss 3.1162, time 5512.28ms, mfu 8.14%
+iter 58480: loss 3.0991, time 5512.16ms, mfu 8.14%
+iter 58490: loss 3.2015, time 5512.51ms, mfu 8.14%
+iter 58500: loss 3.0891, time 5512.69ms, mfu 8.14%
+iter 58510: loss 3.2700, time 5512.19ms, mfu 8.14%
+iter 58520: loss 3.2307, time 5512.35ms, mfu 8.14%
+iter 58530: loss 3.0997, time 5512.73ms, mfu 8.14%
+iter 58540: loss 2.9051, time 5512.48ms, mfu 8.14%
+iter 58550: loss 3.3767, time 5512.47ms, mfu 8.14%
+iter 58560: loss 3.4030, time 5512.29ms, mfu 8.14%
+iter 58570: loss 2.8151, time 5512.27ms, mfu 8.14%
+iter 58580: loss 3.1295, time 5514.59ms, mfu 8.14%
+iter 58590: loss 3.1519, time 5512.09ms, mfu 8.14%
+iter 58600: loss 3.3259, time 5512.47ms, mfu 8.14%
+iter 58610: loss 3.4718, time 5512.15ms, mfu 8.14%
+iter 58620: loss 3.0640, time 5511.81ms, mfu 8.14%
+iter 58630: loss 3.0589, time 5512.40ms, mfu 8.14%
+iter 58640: loss 3.0070, time 5512.47ms, mfu 8.14%
+iter 58650: loss 3.3287, time 5512.40ms, mfu 8.14%
+iter 58660: loss 2.9201, time 5512.54ms, mfu 8.14%
+iter 58670: loss 3.3128, time 5512.38ms, mfu 8.14%
+iter 58680: loss 3.0872, time 5512.47ms, mfu 8.14%
+iter 58690: loss 3.0436, time 5512.84ms, mfu 8.14%
+iter 58700: loss 2.7790, time 5513.95ms, mfu 8.14%
+iter 58710: loss 3.3106, time 5512.62ms, mfu 8.14%
+iter 58720: loss 3.2126, time 5513.41ms, mfu 8.14%
+iter 58730: loss 2.9873, time 5512.02ms, mfu 8.14%
+iter 58740: loss 3.2808, time 5511.99ms, mfu 8.14%
+iter 58750: loss 3.1238, time 5512.27ms, mfu 8.14%
+iter 58760: loss 3.0915, time 5512.34ms, mfu 8.14%
+iter 58770: loss 3.0404, time 5512.33ms, mfu 8.14%
+iter 58780: loss 3.2290, time 5512.18ms, mfu 8.14%
+iter 58790: loss 3.0535, time 5512.23ms, mfu 8.14%
+iter 58800: loss 2.9147, time 5512.32ms, mfu 8.14%
+iter 58810: loss 3.2013, time 5512.52ms, mfu 8.14%
+iter 58820: loss 3.2015, time 5513.78ms, mfu 8.14%
+iter 58830: loss 3.0770, time 5514.76ms, mfu 8.14%
+iter 58840: loss 3.0481, time 5511.95ms, mfu 8.14%
+iter 58850: loss 3.3487, time 5512.32ms, mfu 8.14%
+iter 58860: loss 3.1884, time 5512.17ms, mfu 8.14%
+iter 58870: loss 3.4638, time 5511.95ms, mfu 8.14%
+iter 58880: loss 3.1751, time 5512.55ms, mfu 8.14%
+iter 58890: loss 3.3559, time 5512.13ms, mfu 8.14%
+iter 58900: loss 3.1749, time 5512.33ms, mfu 8.14%
+iter 58910: loss 3.0497, time 5512.31ms, mfu 8.14%
+iter 58920: loss 3.2166, time 5512.24ms, mfu 8.14%
+iter 58930: loss 3.2860, time 5512.22ms, mfu 8.14%
+iter 58940: loss 3.1547, time 5512.05ms, mfu 8.14%
+iter 58950: loss 2.8041, time 5514.40ms, mfu 8.14%
+iter 58960: loss 3.0119, time 5512.66ms, mfu 8.14%
+iter 58970: loss 3.1055, time 5512.20ms, mfu 8.14%
+iter 58980: loss 3.3719, time 5512.00ms, mfu 8.14%
+iter 58990: loss 2.9216, time 5512.43ms, mfu 8.14%
+data_dir: /home/derrick/data/openwebtext - step 59000: train loss 3.1410, val loss 3.1543
+saving checkpoint to /home/derrick/repo/euclid/trial1
+iter 59000: loss 3.2570, time 21947.53ms, mfu 7.53%
+iter 59010: loss 3.4133, time 5518.50ms, mfu 7.59%
+iter 59020: loss 2.8138, time 5518.43ms, mfu 7.65%
+iter 59030: loss 3.2894, time 5518.51ms, mfu 7.70%
+iter 59040: loss 3.1503, time 5518.25ms, mfu 7.74%
+iter 59050: loss 3.3399, time 5518.24ms, mfu 7.78%
+iter 59060: loss 3.2578, time 5520.92ms, mfu 7.81%
+iter 59070: loss 3.3136, time 5518.38ms, mfu 7.85%
+iter 59080: loss 2.8875, time 5518.58ms, mfu 7.87%
+iter 59090: loss 2.9912, time 5518.58ms, mfu 7.90%
+iter 59100: loss 3.1827, time 5520.55ms, mfu 7.92%
+iter 59110: loss 3.0479, time 5520.96ms, mfu 7.94%
+iter 59120: loss 3.1270, time 5518.49ms, mfu 7.96%
+iter 59130: loss 2.9431, time 5518.26ms, mfu 7.98%
+iter 59140: loss 2.7635, time 5518.14ms, mfu 8.00%
+iter 59150: loss 3.0560, time 5518.32ms, mfu 8.01%
+iter 59160: loss 3.2964, time 5518.26ms, mfu 8.02%
+iter 59170: loss 3.3130, time 5518.40ms, mfu 8.03%
+iter 59180: loss 3.1441, time 5518.50ms, mfu 8.04%
+iter 59190: loss 3.3681, time 5518.46ms, mfu 8.05%
+iter 59200: loss 3.1878, time 5518.33ms, mfu 8.06%
+iter 59210: loss 2.8453, time 5518.62ms, mfu 8.07%
+iter 59220: loss 3.1124, time 5518.48ms, mfu 8.07%
+iter 59230: loss 3.1203, time 5520.68ms, mfu 8.08%
+iter 59240: loss 3.2361, time 5518.67ms, mfu 8.09%
+iter 59250: loss 2.8671, time 5518.51ms, mfu 8.09%
+iter 59260: loss 3.0310, time 5518.54ms, mfu 8.09%
+iter 59270: loss 3.2040, time 5518.49ms, mfu 8.10%
+iter 59280: loss 2.4886, time 5518.58ms, mfu 8.10%
+iter 59290: loss 3.2054, time 5518.22ms, mfu 8.11%
+iter 59300: loss 3.0744, time 5518.41ms, mfu 8.11%
+iter 59310: loss 2.9349, time 5518.64ms, mfu 8.11%
+iter 59320: loss 3.3774, time 5518.85ms, mfu 8.11%
+iter 59330: loss 3.0327, time 5518.41ms, mfu 8.12%
+iter 59340: loss 3.2137, time 5518.34ms, mfu 8.12%
+iter 59350: loss 3.2439, time 5520.70ms, mfu 8.12%
+iter 59360: loss 2.8919, time 5521.60ms, mfu 8.12%
+iter 59370: loss 3.1040, time 5519.75ms, mfu 8.12%
+iter 59380: loss 3.5511, time 5518.88ms, mfu 8.12%
+iter 59390: loss 3.1706, time 5518.70ms, mfu 8.12%
+iter 59400: loss 3.0047, time 5518.55ms, mfu 8.12%
+iter 59410: loss 3.0750, time 5518.86ms, mfu 8.13%
+iter 59420: loss 3.2406, time 5518.64ms, mfu 8.13%
+iter 59430: loss 3.2232, time 5526.13ms, mfu 8.13%
+iter 59440: loss 3.3882, time 5518.82ms, mfu 8.13%
+iter 59450: loss 3.0234, time 5518.70ms, mfu 8.13%
+iter 59460: loss 2.9890, time 5519.03ms, mfu 8.13%
+iter 59470: loss 3.1764, time 5518.97ms, mfu 8.13%
+iter 59480: loss 3.1742, time 5520.41ms, mfu 8.13%
+iter 59490: loss 3.4702, time 5519.01ms, mfu 8.13%
+iter 59500: loss 2.5143, time 5518.33ms, mfu 8.13%
+iter 59510: loss 3.2148, time 5518.44ms, mfu 8.13%
+iter 59520: loss 2.9432, time 5518.40ms, mfu 8.13%
+iter 59530: loss 2.6035, time 5518.42ms, mfu 8.13%
+iter 59540: loss 3.5499, time 5518.31ms, mfu 8.13%
+iter 59550: loss 3.0999, time 5518.44ms, mfu 8.13%
+iter 59560: loss 3.1990, time 5518.57ms, mfu 8.13%
+iter 59570: loss 3.2111, time 5518.49ms, mfu 8.13%
+iter 59580: loss 2.9371, time 5518.10ms, mfu 8.13%
+iter 59590: loss 3.1190, time 5518.58ms, mfu 8.13%
+iter 59600: loss 3.1047, time 5520.22ms, mfu 8.13%
+iter 59610: loss 3.0959, time 5520.62ms, mfu 8.13%
+iter 59620: loss 2.9859, time 5518.67ms, mfu 8.13%
+iter 59630: loss 3.1399, time 5518.70ms, mfu 8.13%
+iter 59640: loss 2.9674, time 5518.58ms, mfu 8.13%
+iter 59650: loss 3.1476, time 5518.77ms, mfu 8.13%
+iter 59660: loss 3.4000, time 5518.41ms, mfu 8.13%
+iter 59670: loss 3.0165, time 5518.51ms, mfu 8.13%
+iter 59680: loss 3.0266, time 5523.96ms, mfu 8.13%
+iter 59690: loss 3.4561, time 5518.36ms, mfu 8.13%
+iter 59700: loss 3.1233, time 5518.59ms, mfu 8.13%
+iter 59710: loss 3.1177, time 5518.42ms, mfu 8.13%
+iter 59720: loss 3.3193, time 5518.59ms, mfu 8.13%
+iter 59730: loss 3.2831, time 5520.95ms, mfu 8.13%
+iter 59740: loss 3.2120, time 5518.60ms, mfu 8.13%
+iter 59750: loss 3.3715, time 5518.67ms, mfu 8.13%
+iter 59760: loss 3.0828, time 5518.54ms, mfu 8.13%
+iter 59770: loss 3.0766, time 5518.62ms, mfu 8.13%
+iter 59780: loss 3.1579, time 5518.54ms, mfu 8.13%
+iter 59790: loss 3.5542, time 5518.14ms, mfu 8.13%
+iter 59800: loss 3.0346, time 5525.62ms, mfu 8.13%
+iter 59810: loss 3.2130, time 5518.60ms, mfu 8.13%
+iter 59820: loss 3.1765, time 5518.58ms, mfu 8.13%
+iter 59830: loss 3.1664, time 5518.69ms, mfu 8.13%
+iter 59840: loss 2.9084, time 5518.57ms, mfu 8.13%
+iter 59850: loss 3.1937, time 5520.27ms, mfu 8.13%
+iter 59860: loss 2.9782, time 5518.48ms, mfu 8.13%
+iter 59870: loss 3.4457, time 5518.57ms, mfu 8.13%
+iter 59880: loss 3.1415, time 5520.01ms, mfu 8.13%
+iter 59890: loss 3.1209, time 5518.89ms, mfu 8.13%
+iter 59900: loss 3.0505, time 5518.59ms, mfu 8.13%
+iter 59910: loss 3.0251, time 5518.43ms, mfu 8.13%
+iter 59920: loss 2.9407, time 5518.37ms, mfu 8.13%
+iter 59930: loss 2.8857, time 5518.51ms, mfu 8.13%
+iter 59940: loss 2.8347, time 5518.19ms, mfu 8.13%
+iter 59950: loss 3.2729, time 5518.15ms, mfu 8.13%
+iter 59960: loss 3.5497, time 5518.03ms, mfu 8.13%
+iter 59970: loss 3.1228, time 5518.30ms, mfu 8.13%
+iter 59980: loss 2.9747, time 5520.51ms, mfu 8.13%
+iter 59990: loss 3.0607, time 5518.37ms, mfu 8.13%
+data_dir: /home/derrick/data/openwebtext - step 60000: train loss 3.1820, val loss 3.1880
+saving checkpoint to /home/derrick/repo/euclid/trial1
+iter 60000: loss 3.1446, time 21941.98ms, mfu 7.52%
+iter 60010: loss 2.5404, time 5520.74ms, mfu 7.59%
+iter 60020: loss 2.9829, time 5518.67ms, mfu 7.64%
+iter 60030: loss 3.1004, time 5518.65ms, mfu 7.69%
+iter 60040: loss 3.0352, time 5518.51ms, mfu 7.73%
+iter 60050: loss 3.1868, time 5518.94ms, mfu 7.77%
+iter 60060: loss 3.1829, time 5518.59ms, mfu 7.81%
+iter 60070: loss 2.9638, time 5518.32ms, mfu 7.84%
+iter 60080: loss 3.3658, time 5518.75ms, mfu 7.87%
+iter 60090: loss 2.8286, time 5518.74ms, mfu 7.90%
+iter 60100: loss 3.3797, time 5518.70ms, mfu 7.92%
+iter 60110: loss 3.2066, time 5518.50ms, mfu 7.94%
+iter 60120: loss 2.8726, time 5518.46ms, mfu 7.96%
+iter 60130: loss 3.3590, time 5518.49ms, mfu 7.98%
+iter 60140: loss 3.0949, time 5520.81ms, mfu 7.99%
+iter 60150: loss 2.9409, time 5518.19ms, mfu 8.01%
+iter 60160: loss 3.2878, time 5518.43ms, mfu 8.02%
+iter 60170: loss 3.1207, time 5518.45ms, mfu 8.03%
+iter 60180: loss 3.2444, time 5518.49ms, mfu 8.04%
+iter 60190: loss 2.9589, time 5518.18ms, mfu 8.05%
+iter 60200: loss 3.4407, time 5518.22ms, mfu 8.06%
+iter 60210: loss 3.3373, time 5518.54ms, mfu 8.07%
+iter 60220: loss 3.1728, time 5518.51ms, mfu 8.07%
+iter 60230: loss 3.2614, time 5518.43ms, mfu 8.08%
+iter 60240: loss 3.2521, time 5518.37ms, mfu 8.09%
+iter 60250: loss 3.1306, time 5518.45ms, mfu 8.09%
+iter 60260: loss 2.9876, time 5519.95ms, mfu 8.09%
+iter 60270: loss 3.2016, time 5518.41ms, mfu 8.10%
+iter 60280: loss 3.1799, time 5517.97ms, mfu 8.10%
+iter 60290: loss 3.1479, time 5520.94ms, mfu 8.10%
+iter 60300: loss 2.9125, time 5518.58ms, mfu 8.11%
+iter 60310: loss 3.0127, time 5518.72ms, mfu 8.11%
+iter 60320: loss 3.0874, time 5518.27ms, mfu 8.11%
+iter 60330: loss 3.1150, time 5518.62ms, mfu 8.11%
+iter 60340: loss 2.4550, time 5518.38ms, mfu 8.12%
+iter 60350: loss 3.2767, time 5518.31ms, mfu 8.12%
+iter 60360: loss 3.2858, time 5517.99ms, mfu 8.12%
+iter 60370: loss 3.3893, time 5518.67ms, mfu 8.12%
+iter 60380: loss 3.1751, time 5518.48ms, mfu 8.12%
+iter 60390: loss 3.3813, time 5520.33ms, mfu 8.12%
+iter 60400: loss 3.2590, time 5518.28ms, mfu 8.12%
+iter 60410: loss 3.2558, time 5528.41ms, mfu 8.12%
+iter 60420: loss 3.0739, time 5518.02ms, mfu 8.13%
+iter 60430: loss 2.9179, time 5518.45ms, mfu 8.13%
+iter 60440: loss 2.7336, time 5517.87ms, mfu 8.13%
+iter 60450: loss 3.0845, time 5518.13ms, mfu 8.13%
+iter 60460: loss 3.0454, time 5518.54ms, mfu 8.13%
+iter 60470: loss 3.1679, time 5518.35ms, mfu 8.13%
+iter 60480: loss 3.1654, time 5518.42ms, mfu 8.13%
+iter 60490: loss 3.3999, time 5517.97ms, mfu 8.13%
+iter 60500: loss 3.0432, time 5518.32ms, mfu 8.13%
+iter 60510: loss 3.2563, time 5519.88ms, mfu 8.13%
+iter 60520: loss 3.2861, time 5518.21ms, mfu 8.13%
+iter 60530: loss 3.7206, time 5518.84ms, mfu 8.13%
+iter 60540: loss 3.1571, time 5518.37ms, mfu 8.13%
+iter 60550: loss 3.0437, time 5518.38ms, mfu 8.13%
+iter 60560: loss 3.4178, time 5518.62ms, mfu 8.13%
+iter 60570: loss 3.1640, time 5518.12ms, mfu 8.13%
+iter 60580: loss 3.3216, time 5518.45ms, mfu 8.13%
+iter 60590: loss 3.1110, time 5518.63ms, mfu 8.13%
+iter 60600: loss 3.1777, time 5517.92ms, mfu 8.13%
+iter 60610: loss 3.6135, time 5518.60ms, mfu 8.13%
+iter 60620: loss 3.2691, time 5518.37ms, mfu 8.13%
+iter 60630: loss 3.2965, time 5518.40ms, mfu 8.13%
+iter 60640: loss 3.1144, time 5520.56ms, mfu 8.13%
+iter 60650: loss 3.1178, time 5518.17ms, mfu 8.13%
+iter 60660: loss 3.1987, time 5518.36ms, mfu 8.13%
+iter 60670: loss 3.4491, time 5518.20ms, mfu 8.13%
+iter 60680: loss 3.1603, time 5518.70ms, mfu 8.13%
+iter 60690: loss 3.2343, time 5518.64ms, mfu 8.13%
+iter 60700: loss 3.0624, time 5518.36ms, mfu 8.13%
+iter 60710: loss 3.0680, time 5518.74ms, mfu 8.13%
+iter 60720: loss 3.2256, time 5518.34ms, mfu 8.13%
+iter 60730: loss 3.2022, time 5518.37ms, mfu 8.13%
+iter 60740: loss 3.2939, time 5518.24ms, mfu 8.13%
+iter 60750: loss 3.1153, time 5518.63ms, mfu 8.13%
+iter 60760: loss 2.8690, time 5520.76ms, mfu 8.13%
+iter 60770: loss 3.2337, time 5518.45ms, mfu 8.13%
+iter 60780: loss 3.1921, time 5518.50ms, mfu 8.13%
+iter 60790: loss 3.1554, time 5518.73ms, mfu 8.13%
+iter 60800: loss 3.1468, time 5518.41ms, mfu 8.13%
+iter 60810: loss 3.1559, time 5518.12ms, mfu 8.13%
+iter 60820: loss 3.0289, time 5518.27ms, mfu 8.13%
+iter 60830: loss 3.1100, time 5518.34ms, mfu 8.13%
+iter 60840: loss 3.1640, time 5518.21ms, mfu 8.13%
+iter 60850: loss 2.6189, time 5518.40ms, mfu 8.13%
+iter 60860: loss 3.2365, time 5518.49ms, mfu 8.13%
+iter 60870: loss 3.2388, time 5518.46ms, mfu 8.13%
+iter 60880: loss 3.0178, time 5518.52ms, mfu 8.13%
+iter 60890: loss 2.9527, time 5520.31ms, mfu 8.13%
+iter 60900: loss 3.1488, time 5518.56ms, mfu 8.13%
+iter 60910: loss 2.8989, time 5518.93ms, mfu 8.13%
+iter 60920: loss 3.2860, time 5518.28ms, mfu 8.13%
+iter 60930: loss 3.3883, time 5518.26ms, mfu 8.13%
+iter 60940: loss 3.1994, time 5518.42ms, mfu 8.13%
+iter 60950: loss 2.3295, time 5518.51ms, mfu 8.13%
+iter 60960: loss 3.0840, time 5518.59ms, mfu 8.13%
+iter 60970: loss 3.7003, time 5517.74ms, mfu 8.13%
+iter 60980: loss 3.0534, time 5518.37ms, mfu 8.13%
+iter 60990: loss 3.3702, time 5518.18ms, mfu 8.13%
+data_dir: /home/derrick/data/openwebtext - step 61000: train loss 3.1508, val loss 3.1556
+saving checkpoint to /home/derrick/repo/euclid/trial1
+iter 61000: loss 2.9399, time 21927.00ms, mfu 7.53%
+iter 61010: loss 3.1666, time 5518.06ms, mfu 7.59%
+iter 61020: loss 3.0588, time 5518.23ms, mfu 7.64%
+iter 61030: loss 3.1143, time 5518.30ms, mfu 7.69%
+iter 61040: loss 3.1854, time 5520.71ms, mfu 7.73%
+iter 61050: loss 3.0823, time 5520.17ms, mfu 7.77%
+iter 61060: loss 3.3114, time 5518.33ms, mfu 7.81%
+iter 61070: loss 2.8011, time 5518.68ms, mfu 7.84%
+iter 61080: loss 3.1154, time 5517.98ms, mfu 7.87%
+iter 61090: loss 3.1970, time 5518.38ms, mfu 7.90%
+iter 61100: loss 3.3032, time 5518.39ms, mfu 7.92%
+iter 61110: loss 3.2109, time 5518.74ms, mfu 7.94%
+iter 61120: loss 3.1844, time 5525.95ms, mfu 7.96%
+iter 61130: loss 3.3539, time 5518.27ms, mfu 7.98%
+iter 61140: loss 3.4321, time 5518.55ms, mfu 7.99%
+iter 61150: loss 3.2728, time 5518.55ms, mfu 8.01%
+iter 61160: loss 3.2788, time 5518.30ms, mfu 8.02%
+iter 61170: loss 3.0792, time 5519.88ms, mfu 8.03%
+iter 61180: loss 3.0566, time 5518.47ms, mfu 8.04%
+iter 61190: loss 3.3612, time 5518.37ms, mfu 8.05%
+iter 61200: loss 3.4232, time 5518.63ms, mfu 8.06%
+iter 61210: loss 3.1455, time 5518.31ms, mfu 8.07%
+iter 61220: loss 3.0321, time 5518.26ms, mfu 8.07%
+iter 61230: loss 3.7201, time 5518.30ms, mfu 8.08%
+iter 61240: loss 3.2776, time 5526.78ms, mfu 8.08%
+iter 61250: loss 3.0485, time 5518.10ms, mfu 8.09%
+iter 61260: loss 3.4317, time 5518.32ms, mfu 8.09%
+iter 61270: loss 3.0660, time 5518.65ms, mfu 8.10%
+iter 61280: loss 2.9982, time 5518.66ms, mfu 8.10%
+iter 61290: loss 3.2598, time 5520.25ms, mfu 8.10%
+iter 61300: loss 3.0750, time 5517.93ms, mfu 8.11%
+iter 61310: loss 2.9566, time 5518.36ms, mfu 8.11%
+iter 61320: loss 3.0179, time 5518.20ms, mfu 8.11%
+iter 61330: loss 3.1225, time 5518.17ms, mfu 8.11%
+iter 61340: loss 3.0908, time 5518.41ms, mfu 8.12%
+iter 61350: loss 2.8926, time 5518.20ms, mfu 8.12%
+iter 61360: loss 3.0039, time 5518.06ms, mfu 8.12%
+iter 61370: loss 3.1599, time 5523.45ms, mfu 8.12%
+iter 61380: loss 3.3994, time 5517.99ms, mfu 8.12%
+iter 61390: loss 3.2943, time 5518.46ms, mfu 8.12%
+iter 61400: loss 3.0387, time 5518.51ms, mfu 8.12%
+iter 61410: loss 3.4529, time 5518.60ms, mfu 8.13%
+iter 61420: loss 3.1309, time 5520.56ms, mfu 8.13%
+iter 61430: loss 3.4011, time 5518.03ms, mfu 8.13%
+iter 61440: loss 3.5682, time 5518.44ms, mfu 8.13%
+iter 61450: loss 3.4540, time 5519.66ms, mfu 8.13%
+iter 61460: loss 3.0680, time 5517.86ms, mfu 8.13%
+iter 61470: loss 2.8967, time 5518.55ms, mfu 8.13%
+iter 61480: loss 3.1398, time 5518.64ms, mfu 8.13%
+iter 61490: loss 3.1419, time 5524.25ms, mfu 8.13%
+iter 61500: loss 2.9557, time 5518.50ms, mfu 8.13%
+iter 61510: loss 3.1170, time 5518.13ms, mfu 8.13%
+iter 61520: loss 3.2770, time 5518.20ms, mfu 8.13%
+iter 61530: loss 2.7229, time 5518.40ms, mfu 8.13%
+iter 61540: loss 3.4697, time 5520.16ms, mfu 8.13%
+iter 61550: loss 3.1426, time 5518.41ms, mfu 8.13%
+iter 61560: loss 3.2374, time 5518.54ms, mfu 8.13%
+iter 61570: loss 3.1920, time 5518.54ms, mfu 8.13%
+iter 61580: loss 3.3228, time 5518.54ms, mfu 8.13%
+iter 61590: loss 3.1527, time 5518.61ms, mfu 8.13%
+iter 61600: loss 3.4313, time 5518.55ms, mfu 8.13%
+iter 61610: loss 3.1271, time 5518.94ms, mfu 8.13%
+iter 61620: loss 3.2145, time 5518.24ms, mfu 8.13%
+iter 61630: loss 2.9726, time 5518.66ms, mfu 8.13%
+iter 61640: loss 3.0060, time 5518.60ms, mfu 8.13%
+iter 61650: loss 3.3302, time 5518.32ms, mfu 8.13%
+iter 61660: loss 3.1809, time 5518.72ms, mfu 8.13%
+iter 61670: loss 2.9905, time 5520.38ms, mfu 8.13%
+iter 61680: loss 3.2001, time 5518.82ms, mfu 8.13%
+iter 61690: loss 3.0745, time 5518.65ms, mfu 8.13%
+iter 61700: loss 2.8929, time 5518.09ms, mfu 8.13%
+iter 61710: loss 3.0224, time 5518.70ms, mfu 8.13%
+iter 61720: loss 2.6015, time 5518.22ms, mfu 8.13%
+iter 61730: loss 3.2405, time 5518.72ms, mfu 8.13%
+iter 61740: loss 2.8866, time 5522.32ms, mfu 8.13%
+iter 61750: loss 3.7630, time 5518.16ms, mfu 8.13%
+iter 61760: loss 2.9984, time 5518.99ms, mfu 8.13%
+iter 61770: loss 2.8549, time 5518.82ms, mfu 8.13%
+iter 61780: loss 3.1010, time 5518.48ms, mfu 8.13%
+iter 61790: loss 3.2399, time 5520.52ms, mfu 8.13%
+iter 61800: loss 3.1431, time 5518.66ms, mfu 8.13%
+iter 61810: loss 3.1012, time 5518.63ms, mfu 8.13%
+iter 61820: loss 3.2704, time 5518.80ms, mfu 8.13%
+iter 61830: loss 3.0856, time 5518.45ms, mfu 8.13%
+iter 61840: loss 2.9798, time 5518.74ms, mfu 8.13%
+iter 61850: loss 3.2130, time 5518.25ms, mfu 8.13%
+iter 61860: loss 3.0542, time 5518.57ms, mfu 8.13%
+iter 61870: loss 3.4036, time 5518.20ms, mfu 8.13%
+iter 61880: loss 3.3844, time 5518.29ms, mfu 8.13%
+iter 61890: loss 3.1114, time 5518.48ms, mfu 8.13%
+iter 61900: loss 3.0031, time 5518.61ms, mfu 8.13%
+iter 61910: loss 2.8038, time 5518.39ms, mfu 8.13%
+iter 61920: loss 2.9956, time 5521.15ms, mfu 8.13%
+iter 61930: loss 3.4937, time 5518.44ms, mfu 8.13%
+iter 61940: loss 3.0537, time 5518.40ms, mfu 8.13%
+iter 61950: loss 3.3969, time 5518.66ms, mfu 8.13%
+iter 61960: loss 3.1167, time 5518.51ms, mfu 8.13%
+iter 61970: loss 2.9869, time 5518.28ms, mfu 8.13%
+iter 61980: loss 3.3620, time 5518.52ms, mfu 8.13%
+iter 61990: loss 2.9743, time 5518.32ms, mfu 8.13%
+data_dir: /home/derrick/data/openwebtext - step 62000: train loss 3.1411, val loss 3.1947
+saving checkpoint to /home/derrick/repo/euclid/trial1
+iter 62000: loss 3.4185, time 21931.49ms, mfu 7.52%
+iter 62010: loss 2.9797, time 5518.39ms, mfu 7.59%
+iter 62020: loss 2.8579, time 5518.27ms, mfu 7.64%
+iter 62030: loss 3.3924, time 5518.15ms, mfu 7.69%
+iter 62040: loss 3.1935, time 5518.57ms, mfu 7.73%
+iter 62050: loss 3.3007, time 5518.42ms, mfu 7.77%
+iter 62060: loss 3.5945, time 5518.71ms, mfu 7.81%
+iter 62070: loss 3.1859, time 5518.31ms, mfu 7.84%
+iter 62080: loss 2.9859, time 5520.23ms, mfu 7.87%
+iter 62090: loss 3.2736, time 5518.36ms, mfu 7.90%
+iter 62100: loss 2.8630, time 5518.38ms, mfu 7.92%
+iter 62110: loss 3.2395, time 5518.08ms, mfu 7.94%
+iter 62120: loss 2.9369, time 5518.31ms, mfu 7.96%
+iter 62130: loss 3.1695, time 5518.45ms, mfu 7.98%
+iter 62140: loss 3.2094, time 5518.36ms, mfu 7.99%
+iter 62150: loss 2.9860, time 5518.45ms, mfu 8.01%
+iter 62160: loss 3.0707, time 5518.30ms, mfu 8.02%
+iter 62170: loss 3.2188, time 5518.35ms, mfu 8.03%
+iter 62180: loss 3.3517, time 5518.38ms, mfu 8.04%
+iter 62190: loss 3.2307, time 5518.25ms, mfu 8.05%
+iter 62200: loss 2.8975, time 5520.95ms, mfu 8.06%
+iter 62210: loss 3.1044, time 5518.26ms, mfu 8.07%
+iter 62220: loss 3.2457, time 5518.53ms, mfu 8.07%
+iter 62230: loss 3.2949, time 5519.07ms, mfu 8.08%
+iter 62240: loss 3.3178, time 5518.63ms, mfu 8.08%
+iter 62250: loss 3.1994, time 5518.73ms, mfu 8.09%
+iter 62260: loss 3.2249, time 5518.87ms, mfu 8.09%
+iter 62270: loss 3.1054, time 5518.92ms, mfu 8.10%
+iter 62280: loss 3.2267, time 5518.78ms, mfu 8.10%
+iter 62290: loss 3.2284, time 5518.98ms, mfu 8.10%
+iter 62300: loss 2.9582, time 5518.89ms, mfu 8.11%
+iter 62310: loss 3.4477, time 5518.64ms, mfu 8.11%
+iter 62320: loss 3.3963, time 5518.33ms, mfu 8.11%
+iter 62330: loss 2.9363, time 5520.81ms, mfu 8.11%
+iter 62340: loss 2.8438, time 5518.62ms, mfu 8.12%
+iter 62350: loss 3.1995, time 5518.23ms, mfu 8.12%
+iter 62360: loss 3.1903, time 5518.47ms, mfu 8.12%
+iter 62370: loss 3.1757, time 5518.33ms, mfu 8.12%
+iter 62380: loss 3.1955, time 5518.44ms, mfu 8.12%
+iter 62390: loss 3.0764, time 5518.36ms, mfu 8.12%
+iter 62400: loss 3.2556, time 5518.29ms, mfu 8.12%
+iter 62410: loss 2.8539, time 5518.45ms, mfu 8.13%
+iter 62420: loss 3.3056, time 5518.40ms, mfu 8.13%
+iter 62430: loss 3.2644, time 5518.49ms, mfu 8.13%
+iter 62440: loss 2.8201, time 5518.15ms, mfu 8.13%
+iter 62450: loss 3.3254, time 5520.35ms, mfu 8.13%
+iter 62460: loss 3.0174, time 5517.92ms, mfu 8.13%
+iter 62470: loss 3.1466, time 5518.31ms, mfu 8.13%
+iter 62480: loss 2.9225, time 5518.09ms, mfu 8.13%
+iter 62490: loss 3.4440, time 5518.45ms, mfu 8.13%
+iter 62500: loss 3.2502, time 5518.09ms, mfu 8.13%
+iter 62510: loss 3.1582, time 5518.14ms, mfu 8.13%
+iter 62520: loss 3.1358, time 5518.14ms, mfu 8.13%
+iter 62530: loss 3.3546, time 5518.10ms, mfu 8.13%
+iter 62540: loss 3.1905, time 5518.04ms, mfu 8.13%
+iter 62550: loss 3.0804, time 5518.33ms, mfu 8.13%
+iter 62560: loss 3.0703, time 5518.35ms, mfu 8.13%
+iter 62570: loss 3.1618, time 5520.17ms, mfu 8.13%
+iter 62580: loss 3.2074, time 5520.23ms, mfu 8.13%
+iter 62590: loss 3.4229, time 5518.31ms, mfu 8.13%
+iter 62600: loss 3.1496, time 5518.00ms, mfu 8.13%
+iter 62610: loss 3.4063, time 5518.21ms, mfu 8.13%
+iter 62620: loss 3.0179, time 5518.28ms, mfu 8.13%
+iter 62630: loss 3.3271, time 5518.07ms, mfu 8.13%
+iter 62640: loss 3.4934, time 5517.83ms, mfu 8.13%
+iter 62650: loss 3.1766, time 5518.23ms, mfu 8.13%
+iter 62660: loss 3.0674, time 5518.16ms, mfu 8.13%
+iter 62670: loss 3.2260, time 5518.29ms, mfu 8.13%
+iter 62680: loss 3.1658, time 5518.28ms, mfu 8.13%
+iter 62690: loss 3.2507, time 5518.00ms, mfu 8.13%
+iter 62700: loss 3.0476, time 5520.43ms, mfu 8.13%
+iter 62710: loss 3.1278, time 5518.33ms, mfu 8.13%
+iter 62720: loss 3.3090, time 5517.80ms, mfu 8.13%
+iter 62730: loss 3.1642, time 5519.84ms, mfu 8.13%
+iter 62740: loss 3.4426, time 5518.12ms, mfu 8.13%
+iter 62750: loss 3.0012, time 5518.18ms, mfu 8.13%
+iter 62760: loss 3.1204, time 5518.33ms, mfu 8.13%
+iter 62770: loss 3.1931, time 5518.08ms, mfu 8.13%
+iter 62780: loss 3.0535, time 5518.48ms, mfu 8.13%
+iter 62790: loss 3.2605, time 5518.37ms, mfu 8.13%
+iter 62800: loss 2.5717, time 5518.09ms, mfu 8.13%
+iter 62810: loss 3.0065, time 5518.45ms, mfu 8.13%
+iter 62820: loss 3.4814, time 5519.57ms, mfu 8.13%
+iter 62830: loss 2.6778, time 5520.86ms, mfu 8.13%
+iter 62840: loss 3.1463, time 5518.52ms, mfu 8.13%
+iter 62850: loss 3.3273, time 5518.01ms, mfu 8.13%
+iter 62860: loss 2.9219, time 5518.17ms, mfu 8.13%
+iter 62870: loss 3.2322, time 5518.46ms, mfu 8.13%
+iter 62880: loss 3.4840, time 5518.12ms, mfu 8.13%
+iter 62890: loss 3.3151, time 5518.55ms, mfu 8.13%
+iter 62900: loss 3.4455, time 5525.48ms, mfu 8.13%
+iter 62910: loss 3.1727, time 5518.29ms, mfu 8.13%
+iter 62920: loss 3.5849, time 5518.38ms, mfu 8.13%
+iter 62930: loss 2.7646, time 5518.15ms, mfu 8.13%
+iter 62940: loss 3.0561, time 5518.41ms, mfu 8.13%
+iter 62950: loss 3.0400, time 5521.10ms, mfu 8.13%
+iter 62960: loss 3.3877, time 5518.81ms, mfu 8.13%
+iter 62970: loss 3.4383, time 5518.25ms, mfu 8.13%
+iter 62980: loss 3.0295, time 5518.21ms, mfu 8.13%
+iter 62990: loss 3.4074, time 5518.55ms, mfu 8.13%
+data_dir: /home/derrick/data/openwebtext - step 63000: train loss 3.1544, val loss 3.1589
+saving checkpoint to /home/derrick/repo/euclid/trial1
+iter 63000: loss 3.1127, time 21920.60ms, mfu 7.52%
+iter 63010: loss 3.1230, time 5518.37ms, mfu 7.59%
+iter 63020: loss 2.8324, time 5518.48ms, mfu 7.64%
+iter 63030: loss 3.1100, time 5518.35ms, mfu 7.69%
+iter 63040: loss 3.3328, time 5518.18ms, mfu 7.73%
+iter 63050: loss 3.1355, time 5518.03ms, mfu 7.77%
+iter 63060: loss 3.8500, time 5518.07ms, mfu 7.81%
+iter 63070: loss 3.1609, time 5518.37ms, mfu 7.84%
+iter 63080: loss 3.1119, time 5517.87ms, mfu 7.87%
+iter 63090: loss 3.2890, time 5518.65ms, mfu 7.90%
+iter 63100: loss 3.1628, time 5518.29ms, mfu 7.92%
+iter 63110: loss 3.1001, time 5520.39ms, mfu 7.94%
+iter 63120: loss 3.0782, time 5518.34ms, mfu 7.96%
+iter 63130: loss 3.2454, time 5518.24ms, mfu 7.98%
+iter 63140: loss 3.1388, time 5518.71ms, mfu 7.99%
+iter 63150: loss 2.8287, time 5518.34ms, mfu 8.01%
+iter 63160: loss 3.0843, time 5518.76ms, mfu 8.02%
+iter 63170: loss 2.5416, time 5518.64ms, mfu 8.03%
+iter 63180: loss 3.0246, time 5522.48ms, mfu 8.04%
+iter 63190: loss 3.1957, time 5518.29ms, mfu 8.05%
+iter 63200: loss 3.0379, time 5518.20ms, mfu 8.06%
+iter 63210: loss 3.0948, time 5518.29ms, mfu 8.07%
+iter 63220: loss 3.2094, time 5518.23ms, mfu 8.07%
+iter 63230: loss 2.7317, time 5519.76ms, mfu 8.08%
+iter 63240: loss 3.1307, time 5518.33ms, mfu 8.08%
+iter 63250: loss 3.0401, time 5518.36ms, mfu 8.09%
+iter 63260: loss 3.6214, time 5518.31ms, mfu 8.09%
+iter 63270: loss 3.1513, time 5518.27ms, mfu 8.10%
+iter 63280: loss 3.2314, time 5518.55ms, mfu 8.10%
+iter 63290: loss 3.1870, time 5518.11ms, mfu 8.10%
+iter 63300: loss 3.2095, time 5518.27ms, mfu 8.11%
+iter 63310: loss 3.1002, time 5518.32ms, mfu 8.11%
+iter 63320: loss 3.1971, time 5518.18ms, mfu 8.11%
+iter 63330: loss 3.3848, time 5518.42ms, mfu 8.12%
+iter 63340: loss 3.1476, time 5518.31ms, mfu 8.12%
+iter 63350: loss 3.0946, time 5518.12ms, mfu 8.12%
+iter 63360: loss 3.2826, time 5520.35ms, mfu 8.12%
+iter 63370: loss 3.2798, time 5517.70ms, mfu 8.12%
+iter 63380: loss 3.2490, time 5517.99ms, mfu 8.12%
+iter 63390: loss 3.0643, time 5518.47ms, mfu 8.12%
+iter 63400: loss 3.3771, time 5518.31ms, mfu 8.12%
+iter 63410: loss 3.3337, time 5518.35ms, mfu 8.13%
+iter 63420: loss 2.7466, time 5518.30ms, mfu 8.13%
+iter 63430: loss 3.2175, time 5518.36ms, mfu 8.13%
+iter 63440: loss 3.1023, time 5518.41ms, mfu 8.13%
+iter 63450: loss 2.6340, time 5518.24ms, mfu 8.13%
+iter 63460: loss 3.0202, time 5518.27ms, mfu 8.13%
+iter 63470: loss 3.2419, time 5517.99ms, mfu 8.13%
+iter 63480: loss 3.0638, time 5520.20ms, mfu 8.13%
+iter 63490: loss 2.9624, time 5518.57ms, mfu 8.13%
+iter 63500: loss 3.3123, time 5518.22ms, mfu 8.13%
+iter 63510: loss 2.8324, time 5518.28ms, mfu 8.13%
+iter 63520: loss 3.3396, time 5518.71ms, mfu 8.13%
+iter 63530: loss 3.3272, time 5518.03ms, mfu 8.13%
+iter 63540: loss 3.2436, time 5518.44ms, mfu 8.13%
+iter 63550: loss 3.5329, time 5522.33ms, mfu 8.13%
+iter 63560: loss 3.1317, time 5518.36ms, mfu 8.13%
+iter 63570: loss 2.9384, time 5518.40ms, mfu 8.13%
+iter 63580: loss 2.9786, time 5518.12ms, mfu 8.13%
+iter 63590: loss 3.6464, time 5517.96ms, mfu 8.13%
+iter 63600: loss 3.0930, time 5518.25ms, mfu 8.13%
+iter 63610: loss 3.2716, time 5520.16ms, mfu 8.13%
+iter 63620: loss 2.9486, time 5518.06ms, mfu 8.13%
+iter 63630: loss 3.0835, time 5518.00ms, mfu 8.13%
+iter 63640: loss 3.2368, time 5517.92ms, mfu 8.13%
+iter 63650: loss 3.2484, time 5518.33ms, mfu 8.13%
+iter 63660: loss 3.0592, time 5518.08ms, mfu 8.13%
+iter 63670: loss 2.8475, time 5518.22ms, mfu 8.13%
+iter 63680: loss 3.1406, time 5518.33ms, mfu 8.13%
+iter 63690: loss 3.1700, time 5518.04ms, mfu 8.13%
+iter 63700: loss 3.2068, time 5518.63ms, mfu 8.13%
+iter 63710: loss 3.1541, time 5518.08ms, mfu 8.13%
+iter 63720: loss 3.2090, time 5519.75ms, mfu 8.13%
+iter 63730: loss 3.0442, time 5520.31ms, mfu 8.13%
+iter 63740: loss 3.3396, time 5518.08ms, mfu 8.13%
+iter 63750: loss 3.3797, time 5528.65ms, mfu 8.13%
+iter 63760: loss 2.9126, time 5528.79ms, mfu 8.13%
+iter 63770: loss 3.1319, time 5528.88ms, mfu 8.13%
+iter 63780: loss 2.9901, time 5528.26ms, mfu 8.13%
+iter 63790: loss 2.4518, time 5528.74ms, mfu 8.13%
+iter 63800: loss 3.1473, time 5528.74ms, mfu 8.13%
+iter 63810: loss 3.0264, time 5528.76ms, mfu 8.13%
+iter 63820: loss 3.3762, time 5528.78ms, mfu 8.13%
+iter 63830: loss 3.3149, time 5528.43ms, mfu 8.12%
+iter 63840: loss 3.2648, time 5528.84ms, mfu 8.12%
+iter 63850: loss 2.5584, time 5529.05ms, mfu 8.12%
+iter 63860: loss 3.1989, time 5529.42ms, mfu 8.12%
+iter 63870: loss 3.4642, time 5528.59ms, mfu 8.12%
+iter 63880: loss 3.3711, time 5528.55ms, mfu 8.12%
+iter 63890: loss 3.2631, time 5529.22ms, mfu 8.12%
+iter 63900: loss 3.0528, time 5528.97ms, mfu 8.12%
+iter 63910: loss 3.0444, time 5518.19ms, mfu 8.12%
+iter 63920: loss 3.0604, time 5518.25ms, mfu 8.12%
+iter 63930: loss 2.9503, time 5518.14ms, mfu 8.12%
+iter 63940: loss 3.1847, time 5518.32ms, mfu 8.13%
+iter 63950: loss 3.1342, time 5518.44ms, mfu 8.13%
+iter 63960: loss 2.8618, time 5517.77ms, mfu 8.13%
+iter 63970: loss 3.0329, time 5518.31ms, mfu 8.13%
+iter 63980: loss 3.1412, time 5520.59ms, mfu 8.13%
+iter 63990: loss 2.8200, time 5520.39ms, mfu 8.13%
+data_dir: /home/derrick/data/openwebtext - step 64000: train loss 3.1172, val loss 3.1676
+saving checkpoint to /home/derrick/repo/euclid/trial1
+iter 64000: loss 3.3810, time 21923.54ms, mfu 7.52%

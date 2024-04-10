@@ -24,9 +24,9 @@ from ..lib import environments
 from ..lib import ignite as local_ignite
 from ..lib.utils import dict_state_to_tensor
 
-# python3 -m src.train.stock_model -p ~/data/daily_price_data -r test --cuda
-# python3 -m src.train.stock_model -p ~/data/daily_price_data/other -r test --cuda
-# kernprof -l -m src.train.stock_model -p ~/data/daily_price_data/other -r test
+# python3 -m src.rl_stock_model.train -p ~/data/daily_price_data -r test --cuda
+# python3 -m src.rl_stock_model.train -p ~/data/daily_price_data/other -r test --cuda
+# kernprof -l -m src.rl_stock_model.train -p ~/data/daily_price_data/other -r test
 # python -m line_profiler -rmt "train_stock_model.py.lprof" > profile.txt
 
 

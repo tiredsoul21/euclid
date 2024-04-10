@@ -20,9 +20,9 @@ from ..lib.utils import dict_state_to_tensor
 P_MASS = True
 RUNS = 100
 
-# python3 -m src.test.stock_model -d ~/data/daily_price_data/test/ -m <model> -n test-01
-# python3 -m src.test.stock_model -d ~/data/daily_price_data/test/FOX.csv -m <model> -n test-01
-# python3 -m src.test.stock_model -d results-test-01.json -o "plot" -n test1
+# python3 -m src.rl_stock_model.test -d ~/data/daily_price_data/test/ -m <model> -n test-01
+# python3 -m src.rl_stock_model.test -d ~/data/daily_price_data/test/FOX.csv -m <model> -n test-01
+# python3 -m src.rl_stock_model.test -d results-test-01.json -o "plot" -n test1
 
 def create_plots(walk_data, det_data, name, significance=0.05):
     """ Create plots and run t-test on the normalized performance """

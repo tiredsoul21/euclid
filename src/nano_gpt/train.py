@@ -18,7 +18,7 @@ import tiktoken
 from ..lib.models import NanoGPT
 from ..lib.model_parts import GPTConfig
 
-# python3 -m src.train.nano_gpt_model --init scratch
+# python3 -m src.nano_gpt.train --init scratch
 
 # -----------------------------------------------------------------------------
 # default config values designed to train a gpt2 (124M) on OpenWebText

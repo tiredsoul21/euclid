@@ -1,13 +1,63 @@
 """ Build the environment for the game of Geister """
-import sys
-import random
 from typing import Tuple
 import numpy as np
 
 import gym
 
-# Defind the tuple for the action
+# Defind the tuple for the action (from, to, player_num)
 Action = Tuple[Tuple[int, int], Tuple[int, int], int]
+
+# Define the tuple for the ghost info (x, y, type)
+Ghost = Tuple[int, int, int]
+
+class GeisterState:
+    """ State of the game """
+    def __init__(self):
+        self.step: int = 0
+        self.done: bool = False
+        self.player1_reward: float = 0
+        self.player2_reward: float = 0
+        self.player_turn: int = 1
+        self.ghosts = {
+            "p1" : {
+                "me": [],
+                "opp": [],
+                "captures": []
+            },
+            "p2" : {
+                "me": [],
+                "opp": [],
+                "captures": []
+            }
+        }
+        self._boards = {
+            "p1_board": np.zeros((6, 6), dtype=np.int32),
+            "p2_board": np.zeros((6, 6), dtype=np.int32)
+        }
+
+    def get_ghosts(self, player_num):
+        """ Get the player's ghosts """
+        assert player_num in [1, 2]
+        return self.ghosts["p1"] if player_num == 1 else self.ghosts["p2"]
+
+    def get_posssible_actions(self, player_num):
+        """ Get the possible moves for the player """
+        assert player_num in [1, 2]
+        player = self.ghosts["p1"] if player_num == 1 else self.ghosts["p2"]
+        actions = []
+        board = self._boards["p1_board"] if player_num == 1 else self._boards["p2_board"]
+
+        # Get the possible moves for the player's ghosts (max 36 moves)
+        for ghost in player["me"]:
+            x, y, t = ghost
+            for dx, dy in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
+                new_x, new_y = x + dx, y + dy
+                # Check if within the board and the space is valid
+                if 0 <= new_x < 6 and 0 <= new_y < 6 and (board[new_x, new_y] in [0, 3, 4, 6]):
+                    # Append the move to the list of possible actions
+                    actions.append(((x, y, t), (new_x, new_y, board[new_x, new_y])))
+
+        return actions
 
 class GeisterEnv(gym.Env):
     """
@@ -31,19 +81,10 @@ class GeisterEnv(gym.Env):
         self._mask_board_2 = np.zeros((6, 6), dtype=np.int32)
 
         # Set the number of steps of the game
-        self._current_state = { 
-            "step": 0, 
-            "done": False, 
-            "player1_reward": 0, 
-            "player2_reward": 0,
-            "player_turn": 1,
-            "player1_win": False,
-            "player2_win": False
-        }
+        self._state: GeisterState = GeisterState()
 
         # Set the seed
         np.random.seed(seed)
-        self.reset()
 
     def reset(self, **kwargs):
         """
@@ -91,6 +132,30 @@ class GeisterEnv(gym.Env):
 
         self.reflect_board()
 
+        # Set the current state
+        self._state = GeisterState()
+        self._state.step = 0
+        self._state.done = False
+        self._state.player1_reward = 0
+        self._state.player2_reward = 0
+        self._state.player_turn = 1
+        for i in range(6):
+            for j in range(6):
+                if self._board_1[i, j] == 1 or self._board_1[i, j] == 2:
+                    self._state.ghosts["p1"]["me"].append((i, j, self._board_1[i, j]))
+                elif self._board_1[i, j] == 3 or self._board_1[i, j] == 4:
+                    self._state.ghosts["p1"]["opp"].append((i, j, 5))
+
+                if self._board_2[i, j] == 1 or self._board_2[i, j] == 2:
+                    self._state.ghosts["p2"]["me"].append((i, j, self._board_2[i, j]))
+                elif self._board_2[i, j] == 3 or self._board_2[i, j] == 4:
+                    self._state.ghosts["p2"]["opp"].append((i, j, 5))
+
+        self._state._boards["p1_board"] = self._board_1
+        self._state._boards["p2_board"] = self._board_2
+
+        return self._state
+
     def step(self, action):
         """
         Take an action in the environment
@@ -110,33 +175,31 @@ class GeisterEnv(gym.Env):
         # Reflect the move on the opponent's board
         self.reflect_move(action)
 
+        self.update_ghosts(action)
+
         # Check if the game is over
         # Escape one ghost to the opponent's side
         if (target_space == 6 or         # Player escape zone
             np.sum(board == 3) == 0 or   # Opponent's good ghosts captured
             np.sum(board == 2) == 0):    # Player's bad ghosts captured
-            self._current_state["done"] = True
-            self._current_state["player1_win"] =  player_num == 1
-            self._current_state["player2_win"] =  player_num == 2
-            self._current_state["player1_reward"] = 1 if player_num == 1 else -1
-            self._current_state["player2_reward"] = 1 if player_num == 2 else -1
+            self._state.done = True
+            self._state.player1_reward = 1
+            self._state.player2_reward = -1
 
-        if self._current_state["step"] == 100 and not self._current_state["done"]:
-            self._current_state["done"] = True
+        if self._state.step == 100 and not self._state.done:
+            self._state.done = True
             # Count the number of good ghosts on the board
             p1_good_capture = 4 - np.sum(self._board_1 == 3)
             p2_good_capture = 4 - np.sum(self._board_2 == 3)
             p1_bad_capture = 4 - np.sum(self._board_1 == 4)
             p2_bad_capture = 4 - np.sum(self._board_2 == 4)
-            self._current_state["player1_reward"] = (p1_good_capture - p1_bad_capture) / 4
-            self._current_state["player2_reward"] = (p2_good_capture - p2_bad_capture) / 4
-            self._current_state["player1_win"] = self._current_state["player1_reward"] > 0
-            self._current_state["player2_win"] = self._current_state["player2_reward"] > 0
+            self._state.player1_reward = (p1_good_capture - p1_bad_capture) / 4
+            self._state.player2_reward = (p2_good_capture - p2_bad_capture) / 4
 
-        self._current_state["step"] += 1
-        self._current_state["player_turn"] = 2 if player_num == 1 else 1
+        self._state.step += 1
+        self._state.player_turn = 2 if player_num == 1 else 1
 
-        return self._current_state
+        return self._state
 
     def render(self):
         """
@@ -173,6 +236,16 @@ class GeisterEnv(gym.Env):
         from_pos, to_pos, player_num = action
         board = self._board_1 if player_num == 1 else self._board_2
         mask_board = self._mask_board_1 if player_num == 1 else self._mask_board_2
+
+        if  (board[to_pos[0], to_pos[1]] == 3 or board[to_pos[0], to_pos[1]] == 4):
+            if player_num == 1:
+                # Update captures and remove the ghost from moves list
+                self._state.ghosts["p1"]["captures"].append((board[to_pos[0], to_pos[1]]))
+                pos_to_remove = (5 - to_pos[0], 5 - to_pos[1])
+                while pos_to_remove in self._state.ghosts["p2"]["opp"]:
+                    self._state.ghosts["p2"]["me"].remove(pos_to_remove)
+            else:
+                self._state.ghosts["p2"]["captures"].append((board[to_pos[0], to_pos[1]]))
 
         # Check if the action is valid
         board[to_pos[0], to_pos[1]] = board[from_pos[0], from_pos[1]]
@@ -225,6 +298,27 @@ class GeisterEnv(gym.Env):
         self._mask_board_2 = self._board_2.copy()
         self._mask_board_2 = np.where(self._board_2 == 3, 5, self._board_2)
         self._mask_board_2 = np.where(self._mask_board_2 == 4, 5, self._mask_board_2)
+
+    def update_ghosts(self, action):
+        """
+        Update the state of the game
+        action: a tuple of (from, to, player_num) positions
+        """
+        from_pos, to_pos, player_num = action
+        player =   self._state.ghosts["p1"] if player_num == 1 else self._state.ghosts["p2"]
+        opponent = self._state.ghosts["p2"] if player_num == 1 else self._state.ghosts["p1"]
+
+        # Update the player's ghosts
+        for i in range(len(player["me"])):
+            if player["me"][i][:2] == from_pos:
+                player["me"][i] = (to_pos[0], to_pos[1], player["me"][i][2])
+                break
+
+        # Update the opponent's ghosts
+        for i in range(len(opponent["opp"])):
+            if opponent["opp"][i][:2] == (5 - from_pos[0], 5 - from_pos[1]):
+                opponent["opp"][i] = (5 - to_pos[0], 5 - to_pos[1], opponent["opp"][i][2])
+                break   
 
     def valid_moves(self, action, board):
         """

@@ -4,6 +4,7 @@ import argparse
 
 from torch import device
 from .environment import GeisterEnv
+from .agent import GeisterAgent
 
 SEED = 42
 
@@ -22,36 +23,66 @@ if __name__ == '__main__':
     os.makedirs(SAVES_DIR, exist_ok=True)
 
     env = GeisterEnv(seed=SEED)
-    env.reset()
-    # board = env.get_board(1)
-    # print(board)
-    # env.print_board(1)
-    # env.step(((4, 1), (3, 1),1))
+    state = env.reset()
+    actions = state.get_posssible_actions(1)
+    for action in actions:
+        print(action)
+    board = env.get_board(1)
+    print(board)
+    print(actions)
 
-    # print("-----------------")
-    # board = env.get_board(1)
-    # env.print_board(1)
-    # print(board)
-    # board = env.get_board(2)
-    # env.print_board(2)
-    # print(board)
+    agent = GeisterAgent(None, None, DEVICE, None)
+    env.print_board(1)
+    env.step(((4, 1), (3, 1),1))
 
-    # env.step(((3, 1), (3, 0),1))
+    print("-----------------")
+    board = env.get_board(1)
+    env.print_board(1)
+    print(board)
+    board = env.get_board(2)
+    env.print_board(2)
+    print(board)
+    env.step(((3, 1), (2, 1),1))
 
-    # print("-----------------")
-    # board = env.get_board(1)
-    # env.print_board(1)
-    # print(board)
-    # board = env.get_board(2)
-    # env.print_board(2)
-    # print(board)
+    print("-----------------")
+    board = env.get_board(1)
+    env.print_board(1)
+    print(board)
+    board = env.get_board(2)
+    env.print_board(2)
+    print(board)
+    state = env.step(((2, 1), (1, 1),1))
 
-    # env.step(((5, 1), (5, 0),1))
+    print("-----------------")
+    board = env.get_board(1)
+    env.print_board(1)
+    print(board)
+    board = env.get_board(2)
+    env.print_board(2)
+    print(board)
 
-    # print("-----------------")
-    # board = env.get_board(1)
-    # env.print_board(1)
-    # print(board)
-    # board = env.get_board(2)
-    # env.print_board(2)
-    # print(board)
+    print(state.ghosts)
+    state = env.step(((1, 1), (1, 2),1))
+    state = env.step(((1, 2), (1, 3),1))
+    state = env.step(((1, 3), (1, 4),1))
+    state = env.step(((1, 4), (0, 4),1))
+    state = env.step(((0, 4), (0, 3),1))
+    state = env.step(((0, 3), (0, 2),1))
+    print(state.done)
+    state = env.step(((0, 2), (0, 1),1))
+
+    print("-----------------")
+    board = env.get_board(1)
+    env.print_board(1)
+    print(board)
+    board = env.get_board(2)
+    env.print_board(2)
+    print(board)
+    print(state.player1_reward)
+    print(state.done)
+    print(state.ghosts)
+
+
+
+
+
