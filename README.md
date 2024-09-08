@@ -16,6 +16,10 @@ pip3 install matplotlib==3.8.2        # For plotting
 pip3 install scipy==1.12.0            # For statistics
 pip3 install line_profiler==4.1.2     # For performance profiling
 pip3 install torchviz==0.0.2          # Graph visualization
+
+# Data tools
+pip install praw==7.7.1               # Reddit Data pull
+pip install emoji==2.12.1             # interpreting emojis
 ```
 
 ### Monitor
