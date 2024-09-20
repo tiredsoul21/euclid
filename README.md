@@ -20,6 +20,7 @@ pip3 install torchviz==0.0.2          # Graph visualization
 # Data tools
 pip install praw==7.7.1               # Reddit Data pull
 pip install emoji==2.12.1             # interpreting emojis
+pip install nltk==3.9.1               # word stemming
 ```
 
 ### Monitor

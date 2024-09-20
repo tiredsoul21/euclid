@@ -3,6 +3,11 @@ import re
 import sys
 import json
 import emoji
+from nltk.stem.snowball import SnowballStemmer
+from nltk.tokenize import word_tokenize
+
+import nltk
+nltk.download('punkt_tab')
 
 DATA_PATH = '/home/derrick/data/reddit/teachers/Teachers.json'
 WORD_LIST_PATH = '/home/derrick/data/reddit/teachers/wordlist.json'
@@ -87,7 +92,13 @@ for document in documents:
     for char in documents[document]:
         if char not in known_chars:
             outlying_chars.add(char)
-# print("Removed special characters")
+
+    # Stemming
+    stemmer = SnowballStemmer('english')
+    words = documents[document].split() 
+    stemmed_words = [stemmer.stem(word) for word in words]
+    documents[document] = ' '.join(stemmed_words)
+
 print(f"Outlying characters: {outlying_chars}")
 
 # Create a dictionary of words and emojis
