@@ -12,10 +12,10 @@ reddit = praw.Reddit(
 )
 
 # The number of posts to pull before stopping (so we can save the data)
-PULL_LIMIT = 10000
+PULL_LIMIT = 3000
 
 # Output file location
-OUTPUT_FILE = "/home/derrick/data/reddit/teachers/Teachers.json"
+OUTPUT_FILE = "/home/derrick/data/reddit/teachers/Teachers2.json"
 
 # Subreddit to pull from
 SUBREDDIT_NAME = "Teachers"
@@ -38,7 +38,17 @@ flair_text_list=[
     "Policy & Politics",
     "Bad Teacher, No Apple",
     "Blatant Abuse of Power",
-    "Moderator Announcement"
+    "Moderator Announcement",
+    "Student or Parent",
+    "Power of Positivity",
+    "New Teacher",
+    "Just Smile and Nod Y'all.  ",
+    "Non-US Teacher",
+    "Rant & Vent",
+    "Retired Teacher",
+    "Another AI / ChatGPT Post 🤖",
+    "Substitute Teacher",
+    "Charter or Private School"
 ]
 
 # Load the existing post IDs from json
@@ -54,12 +64,14 @@ try:
         for post_id in meta_data.keys():
             pulled_ids.add(post_id)
             total_size += 1
+        print(f"Loaded {len(pulled_ids)} posts from the file")
 except FileNotFoundError:
+    print("No existing data file found, starting fresh.")
     pass
 
 subreddit = reddit.subreddit(SUBREDDIT_NAME)
 
-# Append new posts to the CSV
+# Append new posts to the existing data
 count_duplicates = 0
 count_posts = 0
 try:
@@ -76,16 +88,16 @@ try:
         # Create a search pattern to pull posts with the specified flair and KEYWORD
         search_pattern = f'flair:"{flair_text}" {KEYWORD}' if KEYWORD else f'flair:"{flair_text}"'
 
-        # for post in subreddit.new(limit=None):
-        # for post in subreddit.hot(limit=None):
-        # for post in subreddit.top(limit=None): # This may break as comments are many!
-        # for post in subreddit.rising(limit=None):
+        # for post in subreddit.search(search_pattern, sort='hot', limit=None):
+        # for post in subreddit.search(search_pattern, sort='top', limit=None): # This may break as comments are many!
+        # for post in subreddit.search(search_pattern, sort='rising', limit=None):
         for post in subreddit.search(search_pattern, sort='new', limit=None):
             if count_posts >= PULL_LIMIT:
                 break
 
             # Skip posts without comments
             if post.num_comments == 0:
+                print(f"Skipping post without comments: {post.id}")
                 continue
 
             if post.id not in pulled_ids:
@@ -118,19 +130,20 @@ try:
                 flair_data[flair][post_id] = post_info
 
                 # Add post ID and flair to the meta_data structure
-                meta_data[post_id] = {}
-                meta_data[post_id]['flair'] = flair
+                meta_data[post_id] = {
+                    'flair': flair,
+                    'keywords': []
+                }
 
-                # Add keywords to the meta_data structure and add if KEYWORD is not empty
-                meta_data[post_id]['keywords'] = []
+                # Add keywords to the meta_data structure if KEYWORD is set
                 if KEYWORD:
                     meta_data[post_id]['keywords'].append(KEYWORD)
 
-                time.sleep(.25)
+                time.sleep(.5)
                 count_posts += 1
                 total_size += 1
             else:
-                # Although the post is already in the data, we still need to update the keywords
+                # If the post is already in the data, update keywords if necessary
                 key_word_updated = False
                 if KEYWORD and KEYWORD not in meta_data[post.id]['keywords']:
                     meta_data[post.id]['keywords'].append(KEYWORD)

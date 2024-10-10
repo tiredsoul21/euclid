@@ -8,3 +8,4 @@ output
 **/*.lprof
 profile.txt
 **/*.pt
+results_cache

@@ -9,18 +9,20 @@ python3 -m venv ml-env
 source ml-env/bin/activate
 pip3 install numpy==1.26.3            # For data management
 pip3 install gym==0.26.2              # Utility to build / train RL 
-pip3 install torch==2.1.2             # Core models / networks
+pip3 install torch==2.4.1             # Core models / networks
 pip3 install pytorch-ignite==0.4.13   # Engines
 pip3 install tensorboard==2.15.1      # Results display
 pip3 install matplotlib==3.8.2        # For plotting
 pip3 install scipy==1.12.0            # For statistics
 pip3 install line_profiler==4.1.2     # For performance profiling
 pip3 install torchviz==0.0.2          # Graph visualization
+pip3 install accelerate==1.0.0
 
 # Data tools
 pip install praw==7.7.1               # Reddit Data pull
 pip install emoji==2.12.1             # interpreting emojis
 pip install nltk==3.9.1               # word stemming
+pip install transformers==4.45.2      # Bert and tokenizers
 ```
 
 ### Monitor
@@ -76,7 +78,7 @@ and the corresponding Juniper notebooks / Githubs repos listed within.  The impl
 sudo apt-get install python3-venv
 python3 -m venv ml-env
 source ml-env/bin/activate
-pip3 install torch==2.1.2             # Core models / networks
+pip3 install torch==2.4.1             # Core models / networks
 pip3 install matplotlib==3.8.2        # For plotting
 pip3 install torchviz==0.0.2          # Graph visualization
 ```
@@ -102,7 +104,7 @@ sudo apt-get install python3-venv
 python3 -m venv ml-env
 source ml-env/bin/activate
 pip3 install numpy==1.26.3            # For data management
-pip3 install torch==2.1.2             # Core models / networks
+pip3 install torch==2.4.1             # Core models / networks
 pip3 install tiktoken==0.6.0          # Text tokenization
 pip3 install datasets==2.17.1         # For dataset managment
 ```
